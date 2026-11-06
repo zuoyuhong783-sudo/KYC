@@ -17,6 +17,7 @@
             headheight=15pt, headsep=0.9cm, footskip=1.2cm]{geometry}
 \usepackage{newtxtext,newtxmath}         % Times New Roman look
 \usepackage{graphicx}
+\usepackage{rotating}                                % sidewaysfigure for the wide architecture diagram
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{caption}
@@ -39,9 +40,9 @@
   \fancyfoot[C]{\footnotesize\thepage}\renewcommand{\headrulewidth}{0pt}}
 
 % ---------- body headings: "Section 1: Title" 16pt bold, subsections 12pt bold ----------
-\titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries}{Section \thesection:}{0.4em}{}
-\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
-\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+\titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries\raggedright}{Section \thesection:}{0.4em}{}
+\titleformat{\subsection}{\normalsize\bfseries\raggedright}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\raggedright}{\thesubsubsection}{0.6em}{}
 \titlespacing*{\section}{0pt}{18pt}{10pt}
 \titlespacing*{\subsection}{0pt}{12pt}{6pt}
 \titlespacing*{\subsubsection}{0pt}{10pt}{4pt}
@@ -166,7 +167,7 @@
 % ---------- appendix: "Appendix A:" instead of "Section A:" ----------
 \clearpage
 \appendix
-\titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries}{Appendix \thesection:}{0.4em}{}
+\titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries\raggedright}{Appendix \thesection:}{0.4em}{}
 \addtocontents{toc}{\protect\renewcommand{\protect\cftsecpresnum}{Appendix~}}
 \addtocontents{toc}{\protect\setlength{\protect\cftsecnumwidth}{5.6em}}
 \input{sections/sec8_contribution}
