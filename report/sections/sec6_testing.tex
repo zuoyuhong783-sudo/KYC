@@ -72,9 +72,9 @@ Twenty percent of the packages are deliberately corrupted (zero-byte files,
 non-image payloads renamed to \texttt{.jpg}, and truncated JPEG streams), mixed
 uniformly into the whole submission window rather than front-loaded, so that the
 dead-letter path is exercised concurrently with the happy path. A separate
-functional suite of 27 fixtures covers all four verdicts---\texttt{PASS},
-\texttt{NEEDS\_HUMAN\_REVIEW}, \texttt{FAIL} and \texttt{DLQ}---as summarised in
-Table~\ref{tab:fixtures}.
+functional suite of 23 fixtures covers the three verdicts reachable with the
+current fixture taxonomy---\texttt{PASS}, \texttt{NEEDS\_HUMAN\_REVIEW} and
+\texttt{DLQ}---as summarised in Table~\ref{tab:fixtures}.
 
 All experiments ran in \texttt{us-east-1} on AWS Academy Learner Lab. The four
 Lambdas use the Python 3.12 runtime with 1024\,MB of memory and a 60\,s timeout;
@@ -98,10 +98,10 @@ retried while it is still being processed.
     \midrule
     Normal (same person, valid document) & \texttt{PASS} & 10 \\
     Identity mismatch & \texttt{NEEDS\_HUMAN\_REVIEW} & 3 \\
-    Blurred or face-less selfie & \texttt{NEEDS\_HUMAN\_REVIEW} & 4 \\
-    Expired document & \texttt{FAIL} & 2 \\
-    Missing OCR field & \texttt{FAIL} & 2 \\
-    Corrupted upload & DLQ & 6 \\
+    Blurred selfie & \texttt{NEEDS\_HUMAN\_REVIEW} & 2 \\
+    Face-less selfie & \texttt{NEEDS\_HUMAN\_REVIEW} & 2 \\
+    Zero-byte upload & DLQ & 2 \\
+    Wrong format / truncated & DLQ & 4 \\
     \bottomrule
   \end{tabular}
 \end{table}
