@@ -1,0 +1,44 @@
+# --- Secrets: never commit ---
+.env
+.env.*
+*.pem
+*.key
+credentials
+credentials.*
+.aws/
+*secret*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Lambda build artifacts ---
+*.zip
+package/
+.aws-sam/
+
+# --- LaTeX build files ---
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.bbl
+report/*.blg
+report/*.synctex.gz
+report/*.fdb_latexmk
+report/*.fls
+report/*.pdf
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+~$*

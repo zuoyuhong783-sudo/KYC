@@ -1,0 +1,69 @@
+% =====================================================================
+%  VeriCloud final report -- main file
+%  OWNER: A (Zuo Yuhong). Nobody else edits this file or the preamble.
+%  Everyone else writes only in their own sections/*.tex file.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+% JSON highlighting for lstlisting (listings has no built-in json language)
+\lstdefinelanguage{json}{basicstyle=\ttfamily\small, showstringspaces=false,
+  string=[s]{"}{"}, stringstyle=\color{blue!60!black}}
+\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single,
+  columns=fullflexible}
+
+\title{VeriCloud: A Serverless, Event-Driven KYC Document Verification Pipeline on AWS\\
+\large CDS538 Cloud Computing --- Final Report}
+\author{Team SkyFin\\
+ZUO Yuhong (5561009), SU Changwei (5538856), YANG Xueli (5552072),\\
+LI Donghan (5546554), LI Hengchen (5520483), HU Zhongyuan (3162304)\\
+\small GitHub: \url{https://github.com/zuoyuhong783-sudo/KYC}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% TODO(A): write the abstract (E and F provide one result sentence each).
+\end{abstract}
+\noindent\textbf{Keywords:} serverless, KYC, AWS Step Functions, fault tolerance, cloud economics
+
+\tableofcontents
+\newpage
+
+\input{sections/sec1_summary}
+\input{sections/sec2_business}
+
+\section{Target Cloud Architecture and Workflow Design}\label{sec:arch}
+\input{sections/sec3a_architecture}
+\input{sections/sec3b_orchestration}
+\subsection{Core Processing Modules}\label{sec:modules}
+\input{sections/sec3c_ocr}
+\input{sections/sec3d_face}
+\input{sections/sec3e_data_notify}
+
+\input{sections/sec4_fault_tolerance}
+
+\section{Security, Compliance and Cost Optimization}\label{sec:seccost}
+\input{sections/sec5a_security}
+\input{sections/sec5b_cost}
+
+\input{sections/sec6_testing}
+\input{sections/sec7_conclusion}
+
+% Lists every entry in references.bib (the 5 proposal references) so the
+% bibliography is never empty; cited entries are numbered as usual.
+\nocite{*}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\appendix
+\input{sections/sec8_contribution}
+\end{document}
