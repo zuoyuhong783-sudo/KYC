@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 版本 | v1.0 · 2026-11-05 · 发布人：A（Zuo Yuhong） |
+| 版本 | v1.1 · 2026-11-06 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
 | 状态 | 待全员确认（确认方式：见文末“确认签名”，B/C/D/F 必须确认，E 建议确认） |
 | 生效规则 | 本文件是全组**唯一**的接口事实来源。所有代码、配置、报告里的资源名、S3 路径、JSON 字段、DynamoDB 字段必须与本文件完全一致。要改名或加字段：先在群里提，A 更新本文件并升版本号（v1.1…）后才生效。 |
 | 来源 | 《01_VeriCloud_六人分工与时间线执行方案》第一节、第十二节 |
@@ -16,7 +16,7 @@
 | 项 | 约定 |
 |---|---|
 | AWS 环境 | AWS Academy Learner Lab |
-| Region | `us-east-1`（所有资源） |
+| Region | `us-east-1`（所有资源）。Learner Lab 只允许这个区，在悉尼等其他区创建资源会被拒绝 |
 | IAM | 实际运行统一使用 `LabRole`（Learner Lab 通常不能新建角色）；最小权限策略由 C 写成设计文档放在 `security/iam/` |
 | Lambda 运行时 | Python 3.12 |
 | Lambda 代码结构 | 一个函数一个文件夹 `lambda/<name>/`，入口 `handler.py` 的 `lambda_handler(event, context)` |
@@ -30,7 +30,7 @@
 ## 2. 系统数据流
 
 ```text
-用户 ──(预签名URL, 5分钟有效)──▶ S3 vericloud-raw-<后缀>
+用户 ──(预签名URL, 5分钟有效)──▶ S3 vericloud-raw-1009
                                    │  raw/id-card/<application_id>.jpg
                                    │  raw/selfie/<application_id>.jpg   ← 自拍上传 = 触发信号
                                    ▼
@@ -66,7 +66,7 @@
 
 | 资源 | 名称 | 负责人 |
 |---|---|---|
-| S3 桶 | `vericloud-raw-<后缀>`（后缀由 A 确认后填入第 8 节；桶名全球唯一） | C |
+| S3 桶 | `vericloud-raw-1009`（v1.1 确认；桶名全球唯一，各人自己账号里测试时如被占用，可临时加个人后缀，演示账号必须用此名） | C |
 | S3 路径（证件） | `raw/id-card/<application_id>.jpg`（或 `.png`） | C |
 | S3 路径（自拍） | `raw/selfie/<application_id>.jpg`（或 `.png`） | C |
 | SQS 入口队列 | `vericloud-ingest-queue` | D |
@@ -259,7 +259,7 @@ class OcrExtractionError(Exception):
 
 | 资源 | ARN / 名称 | 填写人 | 日期 |
 |---|---|---|---|
-| S3 桶名后缀 | `vericloud-raw-______` | A 确认 | |
+| S3 桶名后缀 | `vericloud-raw-1009`（组长学号 5561009 后 4 位） | A 确认 | 2026-11-06 |
 | SQS 入口队列 URL | | D | |
 | SQS DLQ ARN | | D | |
 | `vericloud-starter` ARN | | D | |
@@ -291,6 +291,7 @@ class OcrExtractionError(Exception):
 | 版本 | 日期 | 修改人 | 内容 |
 |---|---|---|---|
 | v1.0 | 2026-11-05 | A | 首次发布 |
+| v1.1 | 2026-11-06 | A | S3 桶名后缀定为 `1009`（桶名 `vericloud-raw-1009`）；注明 Learner Lab 只允许 `us-east-1`（悉尼等其他区建资源会被拒绝） |
 
 ---
 
