@@ -58,7 +58,9 @@
 \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
 \renewcommand{\cftsecpresnum}{Section~}
 \renewcommand{\cftsecaftersnum}{:}
-\setlength{\cftsecnumwidth}{5.3em}
+\setlength{\cftsecnumwidth}{4.75em}
+\cftsetpnumwidth{1.2em}                              % dots run close to the page number
+\cftsetrmarg{1.8em}
 \setlength{\cftsecindent}{0pt}
 \setlength{\cftbeforesecskip}{0pt}
 % level 2: indented "1.1 Title ........ 2"
@@ -82,6 +84,7 @@
 %  COVER (no header, no page number)
 % =====================================================================
 \begin{titlepage}
+  \hypersetup{pageanchor=false}                      % cover has no page number
   \centering
   \vspace*{-0.4cm}
   \includegraphics[width=\textwidth]{figures/lingnan_logo.jpg}\par
@@ -109,6 +112,7 @@
 % =====================================================================
 %  TABLE OF CONTENTS (page 1, like the Word proposal)
 % =====================================================================
+\hypersetup{pageanchor=true}
 \setcounter{page}{1}
 \begingroup
   \setstretch{1.75}
@@ -164,6 +168,6 @@
 \appendix
 \titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries}{Appendix \thesection:}{0.4em}{}
 \addtocontents{toc}{\protect\renewcommand{\protect\cftsecpresnum}{Appendix~}}
-\addtocontents{toc}{\protect\setlength{\protect\cftsecnumwidth}{6em}}
+\addtocontents{toc}{\protect\setlength{\protect\cftsecnumwidth}{5.6em}}
 \input{sections/sec8_contribution}
 \end{document}
