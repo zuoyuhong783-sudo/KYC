@@ -2,42 +2,133 @@
 %  VeriCloud final report -- main file
 %  OWNER: A (Zuo Yuhong). Nobody else edits this file or the preamble.
 %  Everyone else writes only in their own sections/*.tex file.
+%  Layout follows the team's Word proposal: Times New Roman 12pt,
+%  Lingnan logo cover, "Section n:" headings, dotted Table of Contents.
 % =====================================================================
-\documentclass[11pt,a4paper]{article}
-\usepackage[margin=2.5cm]{geometry}
+\documentclass[12pt,a4paper]{article}
+
+% ---------- cover information: A edits these lines only ----------
+\newcommand{\reportkind}{Final Report}
+\newcommand{\presentationdate}{Nov.24,2026}
+\newcommand{\submissiondate}{TBD}        % TODO(A): fill in once the deadline is confirmed
+
+% ---------- page layout (same margins as the Word proposal) ----------
+\usepackage[a4paper, top=2.54cm, bottom=2.54cm, left=3.17cm, right=3.17cm,
+            headheight=15pt, headsep=0.9cm, footskip=1.2cm]{geometry}
+\usepackage{newtxtext,newtxmath}         % Times New Roman look
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{caption}
 \usepackage{amsmath}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
 
-% JSON highlighting for lstlisting (listings has no built-in json language)
+% ---------- header / footer: small course name top right, page number bottom centre ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\scriptsize CDS538 Cloud Computing}
+\fancyfoot[C]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[R]{\scriptsize CDS538 Cloud Computing}%
+  \fancyfoot[C]{\footnotesize\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ---------- body headings: "Section 1: Title" 16pt bold, subsections 12pt bold ----------
+\titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries}{Section \thesection:}{0.4em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{18pt}{10pt}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+\titlespacing*{\subsubsection}{0pt}{10pt}{4pt}
+
+% ---------- Table of Contents: same look as the Word proposal ----------
+\renewcommand{\contentsname}{Table of Contents}
+\renewcommand{\cfttoctitlefont}{\fontsize{16}{20}\selectfont\bfseries}
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{14pt}
+\renewcommand{\cftdotsep}{1}                         % dense dots like Word
+% level 1: "Section 1: Title ........ 2", not bold
+\renewcommand{\cftsecfont}{\normalfont}
+\renewcommand{\cftsecpagefont}{\normalfont}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsecpresnum}{Section~}
+\renewcommand{\cftsecaftersnum}{:}
+\setlength{\cftsecnumwidth}{5.3em}
+\setlength{\cftsecindent}{0pt}
+\setlength{\cftbeforesecskip}{0pt}
+% level 2: indented "1.1 Title ........ 2"
+\setlength{\cftsubsecindent}{2em}
+\setlength{\cftsubsecnumwidth}{2.2em}
+% level 3: indented further
+\setlength{\cftsubsubsecindent}{4.2em}
+\setlength{\cftsubsubsecnumwidth}{3em}
+\setcounter{tocdepth}{3}
+
+% ---------- code listings ----------
 \lstdefinelanguage{json}{basicstyle=\ttfamily\small, showstringspaces=false,
   string=[s]{"}{"}, stringstyle=\color{blue!60!black}}
-\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single,
-  columns=fullflexible}
+\lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single, columns=fullflexible}
 
-\title{VeriCloud: A Serverless, Event-Driven KYC Document Verification Pipeline on AWS\\
-\large CDS538 Cloud Computing --- Final Report}
-\author{Team SkyFin\\
-ZUO Yuhong (5561009), SU Changwei (5538856), YANG Xueli (5552072),\\
-LI Donghan (5546554), LI Hengchen (5520483), HU Zhongyuan (3162304)\\
-\small GitHub: \url{https://github.com/zuoyuhong783-sudo/KYC}}
-\date{\today}
+\usepackage[hidelinks]{hyperref}                     % load last
 
 \begin{document}
-\maketitle
 
-\begin{abstract}
+% =====================================================================
+%  COVER (no header, no page number)
+% =====================================================================
+\begin{titlepage}
+  \centering
+  \vspace*{-0.4cm}
+  \includegraphics[width=\textwidth]{figures/lingnan_logo.jpg}\par
+  \vspace{2.8cm}
+  {\fontsize{24}{30}\selectfont\bfseries CLOUD COMPUTING\par}
+  \vspace{16pt}
+  {\fontsize{24}{30}\selectfont\bfseries \reportkind\par}
+  \vspace{3cm}
+  {\renewcommand{\arraystretch}{1.75}%
+  \begin{tabular}{@{}>{\bfseries\raggedleft\arraybackslash}p{3.6cm}@{\hspace{0.35cm}}>{\centering\arraybackslash}p{6cm}@{}}
+    Course :            & CDS538 \\ \cline{2-2}
+    Team name :         & SkyFin \\ \cline{2-2}
+    Member :            & 5561009 ZUO YUHONG \\ \cline{2-2}
+                        & 5538856 SU CHANGWEI \\ \cline{2-2}
+                        & 5552072 YANG XUELI \\ \cline{2-2}
+                        & 5546554 LI DONGHAN \\ \cline{2-2}
+                        & 5520483 LI HENGCHEN \\ \cline{2-2}
+                        & 3162304 HU ZHONGYUAN \\ \cline{2-2}
+    Presentation date:  & \presentationdate \\ \cline{2-2}
+    Submission date:    & \submissiondate \\ \cline{2-2}
+    GitHub :            & {\small github.com/zuoyuhong783-sudo/KYC} \\ \cline{2-2}
+  \end{tabular}\par}
+\end{titlepage}
+
+% =====================================================================
+%  TABLE OF CONTENTS (page 1, like the Word proposal)
+% =====================================================================
+\setcounter{page}{1}
+\begingroup
+  \setstretch{1.75}
+  \tableofcontents
+\endgroup
+\clearpage
+
+% =====================================================================
+%  ABSTRACT
+% =====================================================================
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
 % TODO(A): write the abstract (E and F provide one result sentence each).
-\end{abstract}
+
 \noindent\textbf{Keywords:} serverless, KYC, AWS Step Functions, fault tolerance, cloud economics
+\clearpage
 
-\tableofcontents
-\newpage
-
+% =====================================================================
+%  BODY -- one file per owner (see the Overleaf guide)
+% =====================================================================
 \input{sections/sec1_summary}
 \input{sections/sec2_business}
 
@@ -58,12 +149,21 @@ LI Donghan (5546554), LI Hengchen (5520483), HU Zhongyuan (3162304)\\
 \input{sections/sec6_testing}
 \input{sections/sec7_conclusion}
 
-% Lists every entry in references.bib (the 5 proposal references) so the
-% bibliography is never empty; cited entries are numbered as usual.
+% ---------- references ----------
+% \nocite{*} lists every entry in references.bib (the 5 proposal references)
+% so the bibliography is never empty; cited entries are numbered as usual.
+\clearpage
 \nocite{*}
+\renewcommand{\refname}{References}
+\addcontentsline{toc}{section}{References}
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
+% ---------- appendix: "Appendix A:" instead of "Section A:" ----------
+\clearpage
 \appendix
+\titleformat{\section}{\fontsize{16}{20}\selectfont\bfseries}{Appendix \thesection:}{0.4em}{}
+\addtocontents{toc}{\protect\renewcommand{\protect\cftsecpresnum}{Appendix~}}
+\addtocontents{toc}{\protect\setlength{\protect\cftsecnumwidth}{6em}}
 \input{sections/sec8_contribution}
 \end{document}
