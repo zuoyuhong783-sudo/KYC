@@ -1,0 +1,9 @@
+# E（Li Hengchen）的测试/监控工具链依赖
+# 安装：python3 -m venv .venv && source .venv/bin/activate && pip install -r tests/requirements.txt
+boto3>=1.34
+botocore>=1.34
+requests>=2.31
+Pillow>=10.0
+numpy>=1.26
+pandas>=2.1
+matplotlib>=3.8

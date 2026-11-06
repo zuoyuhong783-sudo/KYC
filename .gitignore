@@ -7,6 +7,7 @@ credentials
 credentials.*
 .aws/
 *secret*
+aws_credentials*
 
 # --- Python ---
 __pycache__/
@@ -34,6 +35,11 @@ report/*.synctex.gz
 report/*.fdb_latexmk
 report/*.fls
 report/*.pdf
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
 
 # --- OS / editors ---
 .DS_Store
@@ -43,10 +49,23 @@ desktop.ini
 .idea/
 ~$*
 
-
-# Local OCR tooling and private inputs
+# --- Local OCR tooling and private inputs ---
 .cache/
 .downloads/
 .tmp/
 build/
 lambda/ocr/private-fixtures/
+
+# --- 测试素材（E）---
+# 素材含组员本人照片/合成证件，属个人敏感数据，只留 manifest 与生成脚本。
+# 图片在各人本地生成，通过共享盘 + SHA256SUMS 分发。
+tests/fixtures/id-card/
+tests/fixtures/selfie/
+tests/fixtures/broken/
+tests/fixtures/**/*.jpg
+tests/fixtures/**/*.jpeg
+tests/fixtures/**/*.png
+
+# --- 运行输出 ---
+# results/*.csv 是报告数字的溯源证据，必须进仓库（§9.2 数字关），不要忽略
+screenshots/
