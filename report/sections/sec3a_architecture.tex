@@ -9,11 +9,18 @@
 
 % The diagram is very wide, so it gets its own landscape page
 % (pdflscape: the page is shown horizontally in PDF viewers and Overleaf).
+% The normal header/footer would stay in portrait direction, so this page
+% hides them and draws its own header and page number in landscape direction.
 \begin{landscape}
-\begin{figure}[p]
-  \centering
-  \includegraphics[width=\linewidth, height=0.85\textheight, keepaspectratio]{figures/fig_a_architecture.pdf}
-  \caption{Architectural topology of the VeriCloud serverless KYC pipeline.}
-  \label{fig:architecture}
-\end{figure}
+  \thispagestyle{empty}
+  \noindent\hfill{\scriptsize CDS538 Cloud Computing}\par
+  \vfill
+  \begin{center}
+    \captionsetup{type=figure}
+    \includegraphics[width=\linewidth, height=0.72\textheight, keepaspectratio]{figures/fig_a_architecture.pdf}
+    \caption{Architectural topology of the VeriCloud serverless KYC pipeline.}
+    \label{fig:architecture}
+  \end{center}
+  \vfill
+  \centerline{\footnotesize\thepage}
 \end{landscape}
