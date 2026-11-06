@@ -7,10 +7,13 @@
 
 % TODO(A): write the overview text (task A7). Walk through steps 1-7 shown in Fig.~\ref{fig:architecture}.
 
-% The diagram is very wide, so it gets its own rotated (landscape) page.
-\begin{sidewaysfigure}
+% The diagram is very wide, so it gets its own landscape page
+% (pdflscape: the page is shown horizontally in PDF viewers and Overleaf).
+\begin{landscape}
+\begin{figure}[p]
   \centering
-  \includegraphics[width=\linewidth]{figures/fig_a_architecture.pdf}
+  \includegraphics[width=\linewidth, height=0.85\textheight, keepaspectratio]{figures/fig_a_architecture.pdf}
   \caption{Architectural topology of the VeriCloud serverless KYC pipeline.}
   \label{fig:architecture}
-\end{sidewaysfigure}
+\end{figure}
+\end{landscape}
