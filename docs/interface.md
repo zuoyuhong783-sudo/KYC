@@ -260,13 +260,13 @@ class OcrExtractionError(Exception):
 | 资源 | ARN / 名称 | 填写人 | 日期 |
 |---|---|---|---|
 | S3 桶名后缀 | `vericloud-raw-1009`（组长学号 5561009 后 4 位） | A 确认 | 2026-11-06 |
-| SQS 入口队列 URL | | D | |
-| SQS DLQ ARN | | D | |
-| `vericloud-starter` ARN | | D | |
+| SQS 入口队列 URL |`https://sqs.us-east-1.amazonaws.com/493114794251/vericloud-ingest-queue`| D | 2026-11-08 |
+| SQS DLQ ARN | `arn:aws:sqs:us-east-1:493114794251:vericloud-ingest-dlq`| D | 2026-11-08 |
+| `vericloud-starter` ARN |`arn:aws:lambda:us-east-1:493114794251:function:vericloud-starter` | D | 2026-11-08 |
 | `vericloud-ocr` ARN | | B | |
 | `vericloud-face` ARN | `arn:aws:lambda:us-east-1:350325240468:function:vericloud-face` | C | 2026-11-06 |
 | `vericloud-notify` ARN | | F | |
-| `vericloud-kyc-workflow` ARN | | D | |
+| `vericloud-kyc-workflow` ARN | `arn:aws:states:us-east-1:493114794251:stateMachine:vericloud-kyc-workflow`| D | 2026-11-08 |
 | `vericloud-kyc-table` Stream ARN | | F | |
 | `vericloud-kyc-topic` ARN | | F | |
 | `vericloud-ops-alarm` ARN | | F | |
@@ -304,6 +304,6 @@ class OcrExtractionError(Exception):
 | A | Zuo Yuhong | 全文、S3 事件通知 | ☑ |
 | B | 李东翰 | 5.3、7 | ☐ |
 | C | 胡同学 | 3（S3）、5.4、7 | ☑ |
-| D | 苏昶玮 | 3（SQS/状态机）、5.1、5.2、5.5、6、7 | ☐ |
+| D | 苏昶玮 | 3（SQS/状态机）、5.1、5.2、5.5、6、7 | ☑ |
 | E | Li Hengchen | 2（上传顺序）、9 | ☐ |
 | F | 杨雪俪 | 4、5.6 | ☐ |
