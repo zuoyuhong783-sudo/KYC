@@ -42,3 +42,11 @@ desktop.ini
 .vscode/
 .idea/
 ~$*
+
+
+# Local OCR tooling and private inputs
+.cache/
+.downloads/
+.tmp/
+build/
+lambda/ocr/private-fixtures/

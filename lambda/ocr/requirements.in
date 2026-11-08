@@ -1,0 +1,7 @@
+# RapidOCR 1.x includes its Chinese/English models in the wheel (no runtime download).
+rapidocr-onnxruntime==1.4.4
+onnxruntime>=1.20,<2
+numpy>=1.26,<2
+opencv-python>=4.10,<4.12
+Pillow>=11.3,<13
+boto3>=1.35,<2

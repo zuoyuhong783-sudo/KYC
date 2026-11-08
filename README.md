@@ -85,3 +85,17 @@ Detailed step-by-step instructions are added by each owner in their folder's REA
 ## Report
 
 The final report is written in Overleaf (LaTeX). `report/` holds the same skeleton so it can be uploaded to Overleaf as a new project: zip the contents of `report/` and use **New Project → Upload Project**.
+
+
+## OCR module (B)
+
+The OCR source is integrated under [`lambda/ocr/`](lambda/ocr/README.md). See the [selection evidence](docs/ocr_selection.md) and [integration notes](lambda/ocr/INTEGRATION.md). The ZIP at repository root is a historical handoff snapshot; use the source directory for development.
+
+Run the module tests from the repository root after installing its dependencies:
+
+```powershell
+& .\lambda\ocr\setup.ps1
+& .\lambda\ocr\verify.ps1
+```
+
+Local OCR validation does not imply AWS deployment. The checked-in state machine is still a mock; D must connect the deployed OCR ARN before live end-to-end verification. Run each Lambda module's tests separately because the modules use the same `handler.py` entrypoint name.

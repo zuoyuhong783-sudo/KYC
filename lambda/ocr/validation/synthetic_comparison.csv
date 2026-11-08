@@ -1,0 +1,19 @@
+engine,case_id,seconds,first_call,expected_error,passed,error,name_correct,id_number_masked_correct,expiry_date_correct,issuing_authority_correct,id_valid_correct
+rapidocr,normal_cn,4.728999,True,False,True,,1,1,1,1,1
+rapidocr,normal_en,3.182264,False,False,True,,1,1,1,1,1
+rapidocr,normal_range,2.38933,False,False,True,,1,1,1,1,1
+rapidocr,normal_jpeg,2.474168,False,False,True,,1,1,1,1,1
+rapidocr,normal_split,3.168219,False,False,True,,1,1,1,1,1
+rapidocr,expired,2.078224,False,False,True,,1,1,1,1,1
+rapidocr,zero_byte,0.002364,False,True,True,Image is empty or exceeds the 10 MiB OCR limit,,,,,
+rapidocr,wrong_format,0.041322,False,True,True,Image cannot be decoded as a complete JPEG or PNG,,,,,
+rapidocr,truncated,0.001992,False,True,True,Image cannot be decoded as a complete JPEG or PNG,,,,,
+tesseract,normal_cn,0.350107,True,False,True,,1,1,1,1,1
+tesseract,normal_en,0.197264,False,False,True,,1,1,1,1,1
+tesseract,normal_range,0.221132,False,False,True,,1,1,1,1,1
+tesseract,normal_jpeg,0.244006,False,False,False,,0,1,1,1,1
+tesseract,normal_split,0.174931,False,False,False,,0,1,1,1,1
+tesseract,expired,0.226491,False,False,False,,0,1,1,1,1
+tesseract,zero_byte,0.001954,False,True,True,Image is empty or exceeds the 10 MiB OCR limit,,,,,
+tesseract,wrong_format,0.002411,False,True,True,Image cannot be decoded as a complete JPEG or PNG,,,,,
+tesseract,truncated,0.001776,False,True,True,Image cannot be decoded as a complete JPEG or PNG,,,,,

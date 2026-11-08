@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!requirements.txt
+!errors.py
+!extraction.py
+!ocr_engine.py
+!handler.py

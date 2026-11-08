@@ -1,0 +1,7 @@
+{
+  "name": "测试甲",
+  "id_number_masked": "**************1234",
+  "expiry_date": "2035-05-01",
+  "issuing_authority": "测试市公安局",
+  "id_valid": true
+}
