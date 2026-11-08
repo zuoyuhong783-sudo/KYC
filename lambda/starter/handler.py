@@ -2,13 +2,12 @@ import os
 import json
 import boto3
 import io
-from datetime import datetime, timezone
 from PIL import Image
 
 s3_client = boto3.client('s3')
 sfn_client = boto3.client('stepfunctions')
 
-# 从环境变量读取状态机 ARN，避免硬编码
+# 从环境变量读取状态机 ARN
 STATE_MACHINE_ARN = os.environ.get('STATE_MACHINE_ARN')
 
 ALLOWED_EXTENSIONS = ('.jpg', '.jpeg', '.png')
@@ -19,10 +18,10 @@ class PrecheckFailedError(Exception):
 
 def validate_s3_image(bucket: str, key: str):
     """
-    预检 S3 文件：
-    1. 检查扩展名
-    2. 检查文件是否存在且大于 0 字节
-    3. 检查 PIL 能否正常解析
+    预检 S3 图片：
+    1. 校验扩展名
+    2. 校验文件存在且大于 0 字节
+    3. PIL 完整性校验
     """
     if not key.lower().endswith(ALLOWED_EXTENSIONS):
         raise PrecheckFailedError(f"Invalid extension for file: {key}")
@@ -43,10 +42,21 @@ def validate_s3_image(bucket: str, key: str):
     except Exception as e:
         raise PrecheckFailedError(f"Corrupted or invalid image file ({key}): {str(e)}")
 
+def find_id_card_key(bucket: str, application_id: str) -> str:
+    """
+    针对证件照扩展名：依次尝试 .jpg, .jpeg, .png
+    路径统一使用连字符 raw/id-card/
+    """
+    for ext in ('.jpg', '.jpeg', '.png'):
+        candidate_key = f"raw/id-card/{application_id}{ext}"
+        try:
+            s3_client.head_object(Bucket=bucket, Key=candidate_key)
+            return candidate_key
+        except Exception:
+            continue
+    raise PrecheckFailedError(f"ID card image not found for {application_id} (tried .jpg, .jpeg, .png under raw/id-card/)")
+
 def lambda_handler(event, context):
-    """
-    处理 SQS 接收到的 S3 事件通知并启动 Step Functions 状态机
-    """
     if not STATE_MACHINE_ARN:
         raise ValueError("Environment variable STATE_MACHINE_ARN is not configured.")
 
@@ -57,7 +67,7 @@ def lambda_handler(event, context):
         except json.JSONDecodeError:
             raise ValueError(f"Malformed SQS message body: {body_str}")
 
-        # 支持 S3 直接发往 SQS 或通过 SNS 转发的包装格式
+        # 兼容直接 S3 事件与 SNS 包装的 S3 事件
         if 'Message' in body and isinstance(body['Message'], str):
             s3_event = json.loads(body['Message'])
         else:
@@ -67,34 +77,38 @@ def lambda_handler(event, context):
         if not s3_records:
             raise ValueError("No S3 records found in the payload.")
 
-        s3_info = s3_records[0].get('s3', {})
+        record_0 = s3_records[0]
+        s3_info = record_0.get('s3', {})
         bucket = s3_info.get('bucket', {}).get('name')
         selfie_key = s3_info.get('object', {}).get('key')
 
         if not bucket or not selfie_key:
             raise ValueError(f"Missing bucket or object key: {s3_info}")
 
-        # 从 selfie 路径解析 application_id (路径约定: raw/selfie/<id>.jpg)
+        # ④ created_at 改用 S3 原生上传时间 eventTime
+        created_at = record_0.get('eventTime')
+
+        # 从 selfie 路径解析 application_id (路径约定: raw/selfie/<id>.*)
         filename = os.path.basename(selfie_key)
         application_id = os.path.splitext(filename)[0]
 
-        # 根据约定推导身份证文件路径
-        id_card_key = f"raw/id_card/{filename}"
+        # ① & ② 路径严格使用 raw/id-card/ 连字符，并依次探测不同扩展名
+        id_card_key = find_id_card_key(bucket, application_id)
 
-        # 执行文件预检
+        # 预检两张图片合法性
         validate_s3_image(bucket, selfie_key)
         validate_s3_image(bucket, id_card_key)
 
-        # 构建传递给下游状态机（Role B / Role C）的标准 Payload
+        # 构造下游标准 Payload
         payload = {
             "application_id": application_id,
             "bucket": bucket,
             "id_card_key": id_card_key,
             "selfie_key": selfie_key,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": created_at
         }
 
-        # 启动状态机执行（使用 application_id 作为执行名防止重复执行）
+        # 幂等启动状态机
         try:
             response = sfn_client.start_execution(
                 stateMachineArn=STATE_MACHINE_ARN,
