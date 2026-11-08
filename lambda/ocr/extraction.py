@@ -61,9 +61,10 @@ def _line_value(value: str) -> str:
 def _expiry(values: list[str]) -> str:
     candidates = []
     for value in values:
-        # The contract requires a concrete date; do not invent a date for 长期.
+        # Interface v1.2 reserves this date for a lifetime-valid document.
         if re.search(r"长期|長期|permanent|lifetime|indefinite", value, re.I):
-            raise OcrExtractionError("Unsupported field: expiry_date (no finite date)")
+            candidates.append("9999-12-31")
+            continue
         dates = []
         for match in _DATE.finditer(value):
             try:

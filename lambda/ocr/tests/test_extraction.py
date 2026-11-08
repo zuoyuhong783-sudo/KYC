@@ -64,7 +64,7 @@ def test_missing_fields_are_errors_without_pii(line, field):
     assert "张三" not in str(error.value)
 
 
-@pytest.mark.parametrize("expiry", ["2030-02-30", "长期", "2020.05.01-长期", "permanent", "2030.05.01-2020.05.01", "2030.1.1 2031.1.1 2032.1.1"])
+@pytest.mark.parametrize("expiry", ["2030-02-30", "2030.05.01-2020.05.01", "2030.1.1 2031.1.1 2032.1.1"])
 def test_invalid_or_unsupported_expiry(expiry):
     with pytest.raises(OcrExtractionError, match="expiry_date"):
         extract_fields(TEXT.replace("2020.05.01-2030.05.01", expiry), today=TODAY)
@@ -73,6 +73,17 @@ def test_invalid_or_unsupported_expiry(expiry):
 def test_conflicting_identifiers_rejected():
     with pytest.raises(OcrExtractionError, match="Ambiguous"):
         extract_fields(TEXT.replace("000000200001011234", "000000200001011234 000000200001015678"), today=TODAY)
+
+
+@pytest.mark.parametrize("expiry", ["长期", "长期有效", "長期", "长 期", "2020.05.01-长期", "permanent", "lifetime", "indefinite"])
+def test_lifetime_expiry_uses_contract_sentinel(expiry):
+    result = extract_fields(TEXT.replace("2020.05.01-2030.05.01", expiry), today=TODAY)
+    assert result == {**EXPECTED, "expiry_date": "9999-12-31", "id_valid": True}
+
+
+def test_lifetime_and_conflicting_finite_expiry_are_ambiguous():
+    with pytest.raises(OcrExtractionError, match="Ambiguous field: expiry_date"):
+        extract_fields(TEXT + "\n有效期 长期", today=TODAY)
 
 
 @pytest.mark.parametrize("text", ["", "   ", "unrelated text", None])
