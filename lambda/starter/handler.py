@@ -73,6 +73,11 @@ def lambda_handler(event, context):
         else:
             s3_event = body
 
+        # S3 首次配置通知时发来的测试消息，直接跳过
+        if s3_event.get('Event') == 's3:TestEvent':
+            print("Skipping S3 test event")
+            continue
+
         s3_records = s3_event.get('Records', [])
         if not s3_records:
             raise ValueError("No S3 records found in the payload.")
@@ -85,14 +90,13 @@ def lambda_handler(event, context):
         if not bucket or not selfie_key:
             raise ValueError(f"Missing bucket or object key: {s3_info}")
 
-        # ④ created_at 改用 S3 原生上传时间 eventTime
         created_at = record_0.get('eventTime')
 
         # 从 selfie 路径解析 application_id (路径约定: raw/selfie/<id>.*)
         filename = os.path.basename(selfie_key)
         application_id = os.path.splitext(filename)[0]
 
-        # ① & ② 路径严格使用 raw/id-card/ 连字符，并依次探测不同扩展名
+        # 路径使用 raw/id-card/ 连字符，并依次探测不同扩展名
         id_card_key = find_id_card_key(bucket, application_id)
 
         # 预检两张图片合法性
