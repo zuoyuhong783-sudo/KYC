@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import io
+from datetime import datetime, timezone
 from PIL import Image
 
 s3_client = boto3.client('s3')
@@ -21,7 +22,7 @@ def validate_s3_image(bucket: str, key: str):
     预检 S3 图片：
     1. 校验扩展名
     2. 校验文件存在且大于 0 字节
-    3. PIL 完整性校验
+    3. PIL 完整性及像素解码校验 (load)
     """
     if not key.lower().endswith(ALLOWED_EXTENSIONS):
         raise PrecheckFailedError(f"Invalid extension for file: {key}")
@@ -38,7 +39,7 @@ def validate_s3_image(bucket: str, key: str):
     try:
         file_bytes = response['Body'].read()
         image = Image.open(io.BytesIO(file_bytes))
-        image.verify()
+        image.load()  # 改为 load() 进行深度解码校验
     except Exception as e:
         raise PrecheckFailedError(f"Corrupted or invalid image file ({key}): {str(e)}")
 
@@ -90,7 +91,9 @@ def lambda_handler(event, context):
         if not bucket or not selfie_key:
             raise ValueError(f"Missing bucket or object key: {s3_info}")
 
+        # S3 文件创建时间与 Starter 接收处理时间
         created_at = record_0.get('eventTime')
+        received_at = datetime.now(timezone.utc).isoformat()
 
         # 从 selfie 路径解析 application_id (路径约定: raw/selfie/<id>.*)
         filename = os.path.basename(selfie_key)
@@ -103,13 +106,14 @@ def lambda_handler(event, context):
         validate_s3_image(bucket, selfie_key)
         validate_s3_image(bucket, id_card_key)
 
-        # 构造下游标准 Payload
+        # 构造下游标准 Payload（包含 created_at 和 received_at 供压测端到端耗时分析）
         payload = {
             "application_id": application_id,
             "bucket": bucket,
             "id_card_key": id_card_key,
             "selfie_key": selfie_key,
-            "created_at": created_at
+            "created_at": created_at,
+            "received_at": received_at
         }
 
         # 幂等启动状态机
