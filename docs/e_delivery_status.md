@@ -62,7 +62,7 @@
 |---|---|---|---|---|
 | 自拍照片（每人 1–2 张，**至少 2 个不同的人**） | **B / C / D / F / A** | 直接发群或共享盘 | 11-07 | 无法生成换人组，`gen_fixtures.py` 会拒绝运行 |
 | 共享盘位置（放 23 例素材） | **A（Zuo Yuhong）** | 待定目录 | 11-08 | 素材只能本地各跑，三套图不一致 |
-| S3 桶 | **C（Hu Zhongyuan）** | `vericloud-raw-<组号>` | 11-08 | 自建临时桶 |
+| S3 桶 | **C（Hu Zhongyuan）** | `vericloud-raw-1009`（interface v1.1） | 11-08 | 自建临时桶 |
 | 预签名脚本 | **C** | `security/presign.py` | 11-10 | 内置实现，`--presign-module` 后补 |
 | DynamoDB 表 | **F（Yang Xueli）** | `vericloud-kyc-table` | 11-08 | 自建临时表 |
 | SQS + DLQ | **D（Su Changwei）** | `vericloud-ingest-queue` / `-dlq` | 11-09 | 无替代 |

@@ -99,6 +99,8 @@ def main() -> None:
                     help="C 的 presign 模块，如 security.presign；不填则用内置实现")
     ap.add_argument("--presign-func", default="presign_put_url",
                     help="模块内的函数名，签名需为 (bucket, key) -> str")
+    ap.add_argument("--aws-profile", default=None,
+                    help="C 的 presign 默认用 profile 'lab'；用环境变量凭证时留空")
     ap.add_argument("--sse", action="store_true", help="上传时带 SSE-S3 头（桶策略要求时用）")
     ap.add_argument("--out", default="results/load_test_r1_submitted.csv")
     ap.add_argument("--repo-root", default=".")
@@ -144,25 +146,39 @@ def main() -> None:
 
     s3 = boto3.client("s3", region_name=args.region, config=Config(signature_version="s3v4"))
 
+    def builtin_pair(app_id: str) -> tuple[str, str]:
+        def url(key: str) -> str:
+            return s3.generate_presigned_url(
+                "put_object", Params={"Bucket": args.bucket, "Key": key}, ExpiresIn=URL_TTL_SECONDS
+            )
+        return url(f"raw/id-card/{app_id}.jpg"), url(f"raw/selfie/{app_id}.jpg")
+
     if args.presign_module:
         import importlib
         mod = importlib.import_module(args.presign_module)
-        fn = getattr(mod, args.presign_func, None)
-        if fn is None:
-            sys.exit(f"[FAIL] {args.presign_module} 里没有 {args.presign_func}(bucket, key)")
-        print(f"[info] 使用 {args.presign_module}.{args.presign_func} 生成预签名 URL")
 
-        def presign(key: str) -> str:
-            return fn(args.bucket, key)
+        if hasattr(mod, "generate_upload_urls"):
+            # C 的 security/presign.py：一次返回两个 URL
+            print(f"[info] 使用 {args.presign_module}.generate_upload_urls（C 的实现）")
+
+            def presign_pair(app_id: str) -> tuple[str, str]:
+                res = mod.generate_upload_urls(app_id, bucket=args.bucket,
+                                               profile=args.aws_profile or None)
+                return res["id_card_url"], res["selfie_url"]
+        else:
+            fn = getattr(mod, args.presign_func, None)
+            if fn is None:
+                sys.exit(f"[FAIL] {args.presign_module} 既没有 generate_upload_urls，"
+                         f"也没有 {args.presign_func}(bucket, key)")
+            print(f"[info] 使用 {args.presign_module}.{args.presign_func}")
+
+            def presign_pair(app_id: str) -> tuple[str, str]:
+                return (fn(args.bucket, f"raw/id-card/{app_id}.jpg"),
+                        fn(args.bucket, f"raw/selfie/{app_id}.jpg"))
     else:
-        print("[warn] 内置 presign：C 的 security/presign.py 交付后请改用 --presign-module")
-
-        def presign(key: str) -> str:
-            return s3.generate_presigned_url(
-                "put_object",
-                Params={"Bucket": args.bucket, "Key": key},
-                ExpiresIn=URL_TTL_SECONDS,
-            )
+        print("[warn] 内置 presign：C 的 security/presign.py 已交付，"
+              "正式压测请加 --presign-module security.presign")
+        presign_pair = builtin_pair
 
     rows: list[Submission] = []
 
@@ -179,9 +195,10 @@ def main() -> None:
         try:
             body_id = (root / case["id_card_file"]).read_bytes() if case.get("id_card_file") else b""
             body_selfie = (root / case["selfie_file"]).read_bytes() if case.get("selfie_file") else b""
-            code_id = requests.put(presign(id_key), data=body_id, headers=headers, timeout=15).status_code
+            id_url, selfie_url = presign_pair(app_id)
+            code_id = requests.put(id_url, data=body_id, headers=headers, timeout=15).status_code
             # 自拍必须后传：它是触发 S3 事件的那一张
-            code_selfie = requests.put(presign(selfie_key), data=body_selfie, headers=headers, timeout=15).status_code
+            code_selfie = requests.put(selfie_url, data=body_selfie, headers=headers, timeout=15).status_code
         except Exception as exc:  # noqa: BLE001
             err = f"{type(exc).__name__}: {exc}"
         return Submission(

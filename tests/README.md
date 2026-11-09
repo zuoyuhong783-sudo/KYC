@@ -2,7 +2,7 @@
 
 **Owner:** E · Li Hengchen ｜ 交付对象：B、C、D、F、A
 **Tasks**（01 方案 §4.5）：E1、E2、E3、E6
-**Contract:** `docs/interface.md` §2（上传顺序）与 §9（测试素材）。不要自创字段名或类别名。
+**Contract:** `docs/interface.md` v1.2 §2（上传顺序）、§3（桶 `vericloud-raw-1009`、5 分钟 URL）与 §9（测试素材）。不要自创字段名或类别名。
 
 首批素材 11-08 ｜ 全量 11-10 ｜ 压测 11-21 ｜ Ch6 11-30
 
@@ -56,7 +56,7 @@ python tests/gen_fixtures.py --selfie-dir ~/photos --check
 ## 3. 压测前检查（每次会话都跑）
 
 ```bash
-python tests/preflight.py --bucket vericloud-raw-<后缀> --table vericloud-kyc-table
+python tests/preflight.py --bucket vericloud-raw-1009 --table vericloud-kyc-table
 ```
 
 除了"资源在不在"，还核对 §9.2 一致关的硬指标：桶私有 + SSE-S3 + 生命周期 7 天、
@@ -70,7 +70,8 @@ M2 之前可加 `--allow-missing-functions`。
 python tests/collect_results.py --dlq-url <dlq-url> --purge-only
 
 # ② 第 1 轮
-python tests/load_test.py --bucket vericloud-raw-<后缀> \
+python tests/load_test.py --bucket vericloud-raw-1009 \
+    --presign-module security.presign \
     --count 100 --duration 60 --invalid-ratio 0.2 \
     --out results/load_test_r1_submitted.csv
 
