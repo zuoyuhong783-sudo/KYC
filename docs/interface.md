@@ -273,6 +273,18 @@ class OcrExtractionError(Exception):
 | `vericloud-kyc-topic` ARN | | F | |
 | `vericloud-ops-alarm` ARN | | F | |
 
+### 8.1 统一演示账号（A 的 Learner Lab，账号 `153547984638`）
+
+上表中带个人账号 ID 的 ARN 是各 owner 自测用的；联调（A6，11-12 起）时逐项部署到下面这个账号，并在此表补齐。
+
+| 资源 | ARN / 名称 | 填写人 | 日期 |
+|---|---|---|---|
+| S3 桶 | `vericloud-raw-1009-a`（**临时名**：`vericloud-raw-1009` 仍被 C 的个人账号占用，C 删除后改回正式名） | A | 2026-11-09 |
+| S3 事件通知 | `raw/selfie/` 前缀 `ObjectCreated:*` → `vericloud-ingest-queue`（A5 已验证：上传后队列收到消息） | A | 2026-11-09 |
+| SQS 入口队列 URL | `https://sqs.us-east-1.amazonaws.com/153547984638/vericloud-ingest-queue` | A | 2026-11-09 |
+| SQS DLQ ARN | `arn:aws:sqs:us-east-1:153547984638:vericloud-ingest-dlq` | A | 2026-11-09 |
+| `vericloud-starter` / `-ocr` / `-face` / `-notify`、状态机、DynamoDB、SNS | 待 A6 部署 | | |
+
 **注意**：这里只填 ARN 和名称，**不要**填 Access Key、Secret Key、Session Token 或任何密码。
 
 ---
