@@ -265,7 +265,7 @@ class OcrExtractionError(Exception):
 | SQS 入口队列 URL |`https://sqs.us-east-1.amazonaws.com/493114794251/vericloud-ingest-queue`| D | 2026-11-08 |
 | SQS DLQ ARN | `arn:aws:sqs:us-east-1:493114794251:vericloud-ingest-dlq`| D | 2026-11-08 |
 | `vericloud-starter` ARN |`arn:aws:lambda:us-east-1:493114794251:function:vericloud-starter` | D | 2026-11-08 |
-| `vericloud-ocr` ARN | | B | |
+| `vericloud-ocr` ARN | `arn:aws:lambda:us-east-1:494345913252:function:vericloud-ocr`（**个人 Lab ARN**，统一演示账号部署后更新） | B | 2026-11-08 |
 | `vericloud-face` ARN | `arn:aws:lambda:us-east-1:350325240468:function:vericloud-face` | C | 2026-11-06 |
 | `vericloud-notify` ARN | | F | |
 | `vericloud-kyc-workflow` ARN | `arn:aws:states:us-east-1:493114794251:stateMachine:vericloud-kyc-workflow`| D | 2026-11-08 |
@@ -305,7 +305,7 @@ class OcrExtractionError(Exception):
 | 角色 | 成员 | 负责的接口 | 已确认 |
 |---|---|---|---|
 | A | Zuo Yuhong | 全文、S3 事件通知 | ☑ |
-| B | 李东翰 | 5.3、7 | ☐ |
+| B | 李东翰 | 5.3、7 | ☑（v1.2） |
 | C | 胡同学 | 3（S3）、5.4、7 | ☑ |
 | D | 苏昶玮 | 3（SQS/状态机）、5.1、5.2、5.5、6、7 | ☑ |
 | E | Li Hengchen | 2（上传顺序）、9 | ☐ |
