@@ -12,8 +12,8 @@ normal_10,tests/fixtures/id-card/normal_10.jpg,tests/fixtures/selfie/normal_10.j
 different_person_01,tests/fixtures/id-card/different_person_01.jpg,tests/fixtures/selfie/different_person_01.jpg,different_person,NEEDS_HUMAN_REVIEW,similarity_below_80
 different_person_02,tests/fixtures/id-card/different_person_02.jpg,tests/fixtures/selfie/different_person_02.jpg,different_person,NEEDS_HUMAN_REVIEW,similarity_below_80
 different_person_03,tests/fixtures/id-card/different_person_03.jpg,tests/fixtures/selfie/different_person_03.jpg,different_person,NEEDS_HUMAN_REVIEW,similarity_below_80
-blurry_01,tests/fixtures/id-card/blurry_01.jpg,tests/fixtures/selfie/blurry_01.jpg,blurry,NEEDS_HUMAN_REVIEW,face_error
-blurry_02,tests/fixtures/id-card/blurry_02.jpg,tests/fixtures/selfie/blurry_02.jpg,blurry,NEEDS_HUMAN_REVIEW,face_error
+blurry_01,tests/fixtures/id-card/blurry_01.jpg,tests/fixtures/selfie/blurry_01.jpg,blurry,NEEDS_HUMAN_REVIEW,face_error|similarity_below_80
+blurry_02,tests/fixtures/id-card/blurry_02.jpg,tests/fixtures/selfie/blurry_02.jpg,blurry,NEEDS_HUMAN_REVIEW,face_error|similarity_below_80
 no_face_01,tests/fixtures/id-card/no_face_01.jpg,tests/fixtures/selfie/no_face_01.jpg,no_face,NEEDS_HUMAN_REVIEW,face_error
 no_face_02,tests/fixtures/id-card/no_face_02.jpg,tests/fixtures/selfie/no_face_02.jpg,no_face,NEEDS_HUMAN_REVIEW,face_error
 expired_01,tests/fixtures/id-card/expired_01.jpg,tests/fixtures/selfie/expired_01.jpg,expired,FAIL,id_expired

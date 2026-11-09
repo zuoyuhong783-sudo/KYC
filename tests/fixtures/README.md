@@ -29,7 +29,7 @@ tests/fixtures/
 |---|---|---|---|
 | `normal` | 10 | PASS | 本人照片 + 合成证件，相似度 ≥ 90 |
 | `different_person` | 3 | NEEDS_HUMAN_REVIEW | 证件是甲、自拍是乙（**必须两个真人**） |
-| `blurry` | 2 | NEEDS_HUMAN_REVIEW | 自拍重度模糊，face Lambda 抛 `FaceNotDetectedError` |
+| `blurry` | 2 | NEEDS_HUMAN_REVIEW | 自拍重度模糊，可能 `face_error`，也可能 `similarity_below_80`（两种都算对，manifest 写 `face_error\|similarity_below_80`） |
 | `no_face` | 2 | NEEDS_HUMAN_REVIEW | 自拍里没有人脸 |
 | `expired` | 2 | FAIL | 有效期区间右端改到过去 → `id_expired` |
 | `missing_field` | 2 | FAIL | 遮住"签发机关" → OCR 抽不到 → `ocr_failed` |
@@ -66,11 +66,20 @@ python tests/gen_fixtures.py --selfie-dir ~/photos --check   # 相似度 + 坏�
 cd tests/fixtures && shasum -a 256 -c SHA256SUMS             # 全组同一套图
 ```
 
-## 7. 待 A 批准（interface v1.3）
+> `SHA256SUMS` 覆盖**完整 27 例**后才提交进 git。当前本地只有不需要真人照片的部分
+> （expired / missing_field / 坏文件），对应的校验清单是局部的、不提交，避免别人
+> 按它校验时以为缺了 normal 等用例。
 
-`manifest.csv` 已按 v1.3 提案写成 27 例 / 8 类 / 6 列；A 在 11-11 M1 会上批准后即生效。
-提案内容：§9 加 `expired`、`missing_field` 两类与 `expected_reason` 列；§5.1 加 `received_at`；
-§5.2 预检补 EOI/IEND 完整性判定。见 `docs/interface_change_proposal_E.md`。
+## 7. 评审结论（A，2026-11-09）
 
-**已知缺口**：截断 2000 B（`wrong_format_04`）在现行 §5.2（只看 PIL）下会漏过预检，
-需 D 补完整性判定；用 `python tests/check_precheck.py` 可复现。
+**已按 A 的评审意见执行，待 interface v1.3 正式发布**（`docs/review_A_on_E_proposal_v1.3.md`）。
+
+- §9：同意加 `expired`、`missing_field` 两类与 `expected_reason` 列 → 现为 27 例 / 8 类 / 6 列；
+- `blurry` 的预期结果有两种：模糊自拍可能仍检出人脸、只是相似度不足（`similarity_below_80`），
+  也可能检不到脸（`face_error`），两者都是 `NEEDS_HUMAN_REVIEW`，故写
+  `face_error|similarity_below_80`，收集脚本按 `|` 拆分、任一命中即算对；
+- §5.2 预检改为**完整解码**（`Image.open(...).load()` 不报错），**不采用** EOI/IEND 尾部判断——
+  手机会在 JPEG 结尾后附加数据，看尾部会误杀正常照片。
+
+**已知缺口**：截断 2000 B（`wrong_format_04`）在旧口径（只看 `verify()`）下会漏过预检，
+D 把 `verify()` 改成 `load()` 后即可拦下；`python tests/check_precheck.py` 可对比两种口径。

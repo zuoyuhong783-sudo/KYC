@@ -50,7 +50,7 @@
 
 | 交付物 | 缺什么 | 找谁 |
 |---|---|---|
-| 首批 5 组 normal 素材（11-08，已逾期） | **≥2 位组员的自拍照片** | B / C / D / F / A |
+| 首批 5 组 normal 素材（11-08，已逾期） | **≥2 位组员的自拍照片**（A 在 11-11 M1 协调提供人与共享盘目录） | A 协调；B / C / D / F 提供照片 |
 | 全量 23 例 + SHA256SUMS | 同上 | 同上 |
 | 5 张 `printed` 真拍样本 | 打印机 + 手机拍 | 自己（材料齐后 1 小时） |
 | 仪表盘 / 告警截图 | Lambda 部署完成、SNS 主题 `vericloud-ops-alarm` 的 ARN | B/C/D 部署；**F** 建主题 |
@@ -72,6 +72,8 @@
 
 ## 五、提交状态
 
-- 本地 `main` 领先 `origin/main`（本轮修复已提交），落后 0；工作区干净。
-- **push 未完成**：本机无 GitHub 凭证（无 `~/.git-credentials`、无 SSH key、无 `gh`）。
-  命令：`git -c credential.helper= push https://<用户名>:<PAT>@github.com/zuoyuhong783-sudo/KYC.git main`
+- 6 个提交已于 **2026-11-09 11:52** 推送到 `origin/main`（`e5a6600`），远端与本地差异当时为 `0 0`；
+- 推送后 A 又推进了 1 个提交（`b064959`），本地落后 1 个，下次开工先 `git pull --rebase` 即可；
+- 本轮按 A 的评审意见（`docs/review_A_on_E_proposal_v1.3.md`）继续修改，改完再推一次。
+
+> 不在仓库里记录任何令牌或带 `<PAT>` 的命令行；token 只由本人在本机一次性使用。

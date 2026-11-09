@@ -200,10 +200,16 @@ def generate(args) -> None:
                 except Exception as exc:  # noqa: BLE001
                     print(f"[skip] {p.name}: {exc}")
     if not photos:
-        if not args.demo:
+        face_cases = args.normal + args.different_person + args.blur + args.noface
+        if args.demo:
+            photos = [demo_selfie(0), demo_selfie(1)]
+            print("[warn] demo 模式：使用占位人像，生成物只能看版式，不能用于比脸测试。")
+        elif face_cases == 0:
+            # A 的评审意见第 2 条：没有真人照片时，先产出不依赖人脸比对的部分
+            photos = [demo_selfie(0)]
+            print("[warn] 没有真人照片：只生成 expired / missing_field / 坏文件（不依赖人脸比对）")
+        else:
             sys.exit("没有可用照片：请用 --selfie-dir 指定照片目录，或加 --demo 只看版式。")
-        photos = [demo_selfie(0), demo_selfie(1)]
-        print("[warn] demo 模式：使用占位人像，生成物只能看版式，不能用于比脸测试。")
 
     # 换人组必须来自两个不同的人，否则生成出来是"同人比对"，自检必然不过
     need_people = 2 if args.different_person > 0 else 1
@@ -280,7 +286,10 @@ def generate(args) -> None:
     #   wrong_format_01..02   文本改名 .jpg
     #   wrong_format_03       JPEG 截断 600 B（PIL 打不开）
     #   wrong_format_04       JPEG 截断 2000 B（PIL 能打开，需 §5.2 补完整性判定）
-    good = Image.open(id_dir / "normal_01.jpg") if (id_dir / "normal_01.jpg").exists() else None
+    if (id_dir / "normal_01.jpg").exists():
+        good = Image.open(id_dir / "normal_01.jpg")
+    else:
+        good = make_card(photo=photos[0], **fields(900))
     for i in range(1, args.corrupt + 1):
         (broken_dir / f"zero_byte_{i:02d}.jpg").write_bytes(b"")
         (broken_dir / f"wrong_format_{i:02d}.jpg").write_text("This is not a JPEG image.\n", encoding="utf-8")

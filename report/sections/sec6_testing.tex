@@ -108,6 +108,12 @@ summarised in Table~\ref{tab:fixtures}.
   \end{tabular}
 \end{table}
 
+The two blurred selfies deserve a note: a blurred capture may still expose a face
+that simply fails the similarity threshold, or it may expose no usable face at
+all. Both outcomes are correct for this category and both are classified as
+\texttt{NEEDS\_HUMAN\_REVIEW}, so the expected reason for these two cases is
+recorded as either \texttt{face\_error} or \texttt{similarity\_below\_80}.
+
 The fixtures are generated locally and exchanged as a content-addressed bundle:
 image files are kept out of the repository for privacy, and a SHA-256 manifest
 allows every team member to confirm that they are testing against byte-identical
@@ -119,7 +125,10 @@ All experiments run in \texttt{us-east-1} on AWS Academy Learner Lab. The four
 Lambdas use the Python 3.12 runtime with 1024\,MB of memory and a 60\,s timeout;
 the state machine is a Standard workflow; the ingestion queue uses a 360\,s
 visibility timeout, six times the 60\,s Lambda timeout, so that a message is
-never redelivered while it is still being processed.
+never redelivered while it is still being processed. The pre-check accepts an
+upload only if both images decode completely (\texttt{Image.open(...).load()}
+without error); a truncated or corrupt file is rejected and retried until it
+reaches the dead-letter queue.
 
 \subsection{Alerting and Operational Response}\label{sec:alerting}
 

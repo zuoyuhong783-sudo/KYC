@@ -261,9 +261,11 @@ def main() -> None:
         exp_reason = (exp.get("expected_reason") or "").strip()
         if exp_reason and exp_reason != "-" and item is not None and actual != "DLQ":
             reasons_checked += 1
-            if item.get("reason") != exp_reason:
+            # 竖线表示"任一即可"（如 blurry：可能 face_error，也可能相似度不足）
+            accepted = [r.strip() for r in exp_reason.split("|") if r.strip()]
+            if item.get("reason") not in accepted:
                 reason_mismatch.append(
-                    f"{sub['case_id']}: reason={item.get('reason')!r} != {exp_reason!r}")
+                    f"{sub['case_id']}: reason={item.get('reason')!r} not in {accepted}")
 
     if missing_received:
         print(f"[warn] {missing_received} 条记录没有 received_at，service 口径退回 created_at（含排队）；"

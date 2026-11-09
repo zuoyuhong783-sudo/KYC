@@ -5,9 +5,9 @@
 | 申请人 | E（Li Hengchen） |
 | 日期 | 2026-11-09 |
 | 目标版本 | **v1.2 → v1.3** |
-| 状态 | **待 A 批准（11-11 M1 会上定）** |
+| 状态 | **A 已评审（2026-11-09）**：3 条同意，§5.2 改用「完整解码」方案。见 `docs/review_A_on_E_proposal_v1.3.md`；待 A 发布 interface v1.3 |
 | 影响范围 | §5.1、§5.2、§5.3、§9；D 的 starter 与状态机、B 的 OCR 抽取、E 的素材与收集脚本 |
-| 批准后我要做的 | 当天补 4 行 manifest、打开 `--expired/--missing-field`、更新 Ch6 表格 |
+| E 侧状态 | 已按评审改完：27 例 manifest、双 reason、完整解码自检、Ch6 同步（等 v1.3 正式发布即可） |
 
 一次提 4 条，都是"没有它就有分支测不到 / 有个数算错"的，不是风格问题。
 
@@ -90,17 +90,28 @@ starter 在收到 SQS 消息、通过预检后写入 `received_at`（UTC ISO 860
 后果：`wrong_format_04`（截断 2000 B）会通过预检 → 进 OCR → 抽不到字段 → `FAIL/ocr_failed`，
 而 manifest 期望它进 DLQ。E6 的「坏文件 6/6 进 DLQ」永远差一例。
 
-### 提案
+### 提案（原）与 A 的修订（采用）
+
+E 最初提议看文件尾部的 `FF D9` / `IEND`；A 复现后指出这会**误杀正常照片**——
+不少手机会在 JPEG 的 `FF D9` 之后附加数据（动态照片、厂商元数据），尾部一长就判成损坏。
+因此改用的规则是：
 
 ```diff
- 4. 两张图都能被 `PIL.Image.open()` 打开
-+5. 文件是完整的：JPEG 以 FF D9 结尾、PNG 以 IEND 结尾；不完整按损坏处理
+- 4. 两张图都能被 `PIL.Image.open()` 打开
++ 4. 两张图都能被 PIL 完整解码：Image.open(...) 后调用 .load() 不报错
++    （不要设置 ImageFile.LOAD_TRUNCATED_IMAGES = True）；截断/损坏按 PrecheckFailedError 处理
 ```
 
-D 只需在 starter 里加十行左右（读尾部若干字节判断）。
+D 只需把 starter 里的 `image.verify()` 改成 `image.load()`（一行）。
 
-**证据**：`python tests/check_precheck.py` 的输出（`wrong_format_04` 一行 `current=通过(漏)`、
-`contract=拦下`）。
+**实测对比**（E 的 `tests/check_precheck.py` 可直接复现）：
+
+| 输入 | `verify()` | EOI/IEND 方案 | **`load()`（采用）** |
+|---|---|---|---|
+| 截断 600 B | 拦下 | 拦下 | 拦下 |
+| 截断 2000 B | **漏** | 拦下 | 拦下 |
+| 截断一半 | **漏** | 拦下 | 拦下 |
+| 完整 JPEG + 尾部附加数据 | 通过 | **误拦** | **通过** |
 
 ---
 
@@ -123,12 +134,12 @@ if re.search(r"\d{8,}", value):
 
 ---
 
-## 5. 批准后的连锁改动（E 侧，当天完成）
+## 5. 连锁改动（E 侧，已完成）
 
-1. `manifest.csv` 补 4 行、加第 6 列（27 例）；
+1. `manifest.csv` 补 4 行、加第 6 列（27 例），`blurry` 写 `face_error|similarity_below_80`；
 2. `gen_fixtures.py` 的 `--expired` / `--missing-field` 默认值恢复为 2；
-3. `collect_results.py` 输出 `reason_match`，不符时 `exit 4`；
-4. Ch6 的 `tab:fixtures` 变 8 行 / 27 例、正文改「four verdicts」；
+3. `collect_results.py` 输出 `reason_match`（按 `|` 拆分、任一命中即算对），不符时 `exit 4`；
+4. Ch6 的 `tab:fixtures` 变 8 行 / 27 例、正文改「four verdicts」，预检描述改为完整解码；
 5. `docs/e_delivery_status.md` 同步。
 
 ---
@@ -136,6 +147,5 @@ if re.search(r"\d{8,}", value):
 ## 6. 一句话发群里
 
 > `docs/interface_change_proposal_E.md` 已更新到 **v1.3**：§9 加 `expired`/`missing_field` 两类与
-> `expected_reason` 列，§5.1 加 `received_at`，§5.2 预检补 EOI/IEND 完整性判定，§5.3 让 B 剥离卡底编号。
-> 请在 11-11 M1 会上批；批完我当天补 4 行 manifest，D 的 FAIL 分支就有真实用例了。
-> 截断 2000 B 的实测证据在 `tests/check_precheck.py`，现在会漏过预检。
+> `expected_reason` 列，§5.1 加 `received_at`，§5.2 预检改为**完整解码**（`load()`），§5.3 让 B 剥离卡底编号。
+> 已按评审意见改完 E 侧文件；等 v1.3 发布后通知 D 改 `verify() → load()`。
