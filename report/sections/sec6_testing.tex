@@ -12,18 +12,19 @@
 %
 %  待 A 审核的跨人引用：
 %   · \ref{sec:fault} 指向 D 的 Ch4（sec4_fault_tolerance.tex）
-%   · \cite{aws2023security} 与 \cite{aws2024cloudwatch} 两个 key 都要存在于 references.bib
-%     （前者见 02 指南 §3.5 示例，后者条目见本文末，均由 F 追加）
+%   · \cite{aws2023security} 已在 references.bib；\cite{aws2024cloudwatch}
+%     需 F 追加（条目见 docs/e_bib_entries.bib）
 % ============================================================
 
 \section{Performance Testing and Monitoring}\label{sec:testing}
 
-VeriCloud is evaluated not only on functional correctness but on whether the
-serverless pipeline absorbs a burst without dropping valid applications or
-letting corrupted uploads block the queue. This section defines the metrics we
-instrumented, describes the fault-injected workload, reports the measured
-behaviour of the deployed system, and explains how the operational alarms turn
-those measurements into action.
+Functional correctness alone does not establish that an onboarding pipeline is
+usable: a KYC service must also absorb a traffic burst without dropping valid
+applications and must isolate malformed uploads without stalling the queue. This
+section defines the metrics that were instrumented, describes the fault-injected
+workload and the fixture suite behind it, explains how alarms convert those
+measurements into an operational response, and states the limits of what the
+measurements can support.
 
 \subsection{Observability Metrics and Instrumentation}\label{sec:metrics}
 
@@ -53,9 +54,14 @@ hide where the time is spent. The \emph{service latency} is measured from the
 therefore excludes S3 event delivery and the cold start of the first function.
 The \emph{end-to-end latency} is measured from the client-side completion of the
 selfie upload to \texttt{processed\_at}, and is the number a user would
-experience.
+experience. Reporting both prevents the common mistake of quoting a
+service-internal figure as the user-visible response time.
 
-% TODO(E): 补一句"为什么不用平均值"，以及 p99 在 100 样本下的统计局限（见 §Discussion）
+Percentiles are preferred to the arithmetic mean for a second reason: the
+distribution of end-to-end latency in an event-driven pipeline is right-skewed,
+because a small number of requests either hit a cold start or wait behind a
+queue. A mean would average those cases into an unremarkable number, whereas p90
+and p99 keep them visible.
 
 \subsection{Workload Design and Fault Injection}\label{sec:workload}
 
@@ -72,20 +78,9 @@ Twenty percent of the packages are deliberately corrupted (zero-byte files,
 non-image payloads renamed to \texttt{.jpg}, and truncated JPEG streams), mixed
 uniformly into the whole submission window rather than front-loaded, so that the
 dead-letter path is exercised concurrently with the happy path. A separate
-functional suite of 23 fixtures covers the three verdicts reachable with the
-current fixture taxonomy---\texttt{PASS}, \texttt{NEEDS\_HUMAN\_REVIEW} and
+functional suite of 23 fixtures covers the verdicts reachable with the current
+fixture taxonomy---\texttt{PASS}, \texttt{NEEDS\_HUMAN\_REVIEW} and
 \texttt{DLQ}---as summarised in Table~\ref{tab:fixtures}.
-
-All experiments ran in \texttt{us-east-1} on AWS Academy Learner Lab. The four
-Lambdas use the Python 3.12 runtime with 1024\,MB of memory and a 60\,s timeout;
-the state machine is a Standard workflow; the ingestion queue has a 36\,s
-visibility timeout, six times the pre-check timeout, so that a message is never
-retried while it is still being processed.
-
-% TODO(E) 11-08: 若 5 张 normal 是打印后手机拍摄的，加下面这句（否则不要写）：
-% Five of the ten normal cases were printed at 300 dpi and re-photographed with a
-% smartphone under ambient light and a 10--15 degree tilt, so that the measured
-% OCR accuracy is not an artefact of digitally rendered card images.
 
 \begin{table}[htbp]
   \centering
@@ -106,12 +101,25 @@ retried while it is still being processed.
   \end{tabular}
 \end{table}
 
+The fixtures are generated locally and exchanged as a content-addressed bundle:
+image files are kept out of the repository for privacy, and a SHA-256 manifest
+allows every team member to confirm that they are testing against byte-identical
+inputs. Without that check, three copies generated independently on three
+machines would silently disagree, and a defect reported by one member would not
+be reproducible by another.
+
+All experiments run in \texttt{us-east-1} on AWS Academy Learner Lab. The four
+Lambdas use the Python 3.12 runtime with 1024\,MB of memory and a 60\,s timeout;
+the state machine is a Standard workflow; the ingestion queue has a 36\,s
+visibility timeout, six times the pre-check timeout, so that a message is never
+retried while it is still being processed.
+
 \subsection{Alerting and Operational Response}\label{sec:alerting}
 
 A dashboard is only useful if somebody is told when it turns red. Two alarms
-were configured against the \texttt{vericloud-ops-alarm} topic
-(Table~\ref{tab:alarms}), and both were exercised during the load test:
-Fig.~\ref{fig:alarm} shows the notification that reached the operations inbox.
+are configured against the \texttt{vericloud-ops-alarm} topic
+(Table~\ref{tab:alarms}); the notification that reaches the operations inbox is
+shown in Fig.~\ref{fig:alarm}.
 
 \begin{table}[htbp]
   \centering
@@ -128,8 +136,13 @@ Fig.~\ref{fig:alarm} shows the notification that reached the operations inbox.
   \end{tabular}
 \end{table}
 
-% TODO(E) 11-20: 补一句"为什么不用单一阈值"——预检失败是预期业务结果，
-% 单看 Errors 会在正常流量下反复触发，所以 DLQ depth 才是真正的隔离信号。
+The two alarms are deliberately not redundant. A failed pre-check is an expected
+business outcome for a corrupted upload, so an error-count alarm alone fires
+during normal operation and quickly becomes noise. Queue depth in the
+dead-letter queue is the signal that actually matters, because a message reaches
+it only after the configured number of retries has been exhausted; the error
+alarm is kept as a secondary indicator for failures that never reach the queue,
+such as an invocation that dies before acknowledging its message.
 
 \begin{figure}[htbp]
   \centering
@@ -171,23 +184,24 @@ Table~\ref{tab:loadtest} summarises two consecutive runs of the same workload.
 %   \label{fig:latency}
 % \end{figure}
 
-% TODO(E): 正文引用 Fig.~\ref{fig:dashboard} 与 Fig.~\ref{fig:latency}
-
 \subsection{Discussion and Limitations}\label{sec:limits}
 
-% TODO(E): 三条必须写：
-%  1) p99 明显高于 p50 的归因（冷启动 / SQS 排队 / Rekognition 调用）
-%  2) 100 个样本下 p99 的统计意义有限，只作指示性指标
-%  3) 单账号单 Region、未做故障注入（如 Rekognition 区域性不可用），
-%     以及 Learner Lab 配额对压测规模的限制
-%  4) burst 档与 uniform 档的 p99 对比（若有）
+Three limitations qualify the results. First, the sample size is small: with one
+hundred packages per round, the p99 estimate is determined by a single
+observation and should be read as indicative rather than stable, which is why p50
+and p95 are reported alongside it. Second, all measurements come from one
+account in one region under the resource quotas of a teaching sandbox; a
+production deployment would face different concurrency ceilings and a different
+network path to Rekognition. Third, the corrupted-file scenarios are injected at
+the object level, so the study does not exercise infrastructure-level faults such
+as a regional outage of a managed service, and the corresponding recovery
+behaviour is out of scope.
 
-% ============================================================
-% 以下 BibTeX 交给 F 追加到 references.bib 末尾（E 不改 .bib）
-% @misc{aws2024cloudwatch,
-%   author       = {{Amazon Web Services}},
-%   title        = {Amazon {CloudWatch} User Guide: Metrics and Alarms},
-%   year         = {2024},
-%   howpublished = {\url{https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/}}
-% }
-% ============================================================
+A further caveat concerns the fixtures themselves. Most documents are rendered
+synthetically, which keeps personal data out of the repository but also removes
+the lighting, tilt and sensor noise of a real capture.
+
+% TODO(E) 11-08 之后：若已打印并重拍 5 张 normal，替换为下面两句（否则不要写）：
+% A small number of normal cases are printed at 300 dpi and re-photographed with
+% a smartphone under ambient light and a 10--15 degree tilt, so that the reported
+% OCR accuracy is not an artefact of digitally rendered card images.
