@@ -17,7 +17,8 @@
 
 1. 打开 AWS Academy → Learner Lab → **Start Lab**，等左上角变绿。
 2. 确认胡同学已删掉他账号里的 `vericloud-raw-1009`（桶名全球唯一）。没删也能先做：用临时名字，见下面「桶名被占」。
-3. 这一步**不要**先在你的账号里接 starter 的 SQS 触发器，否则测试消息会被 starter 先拿走，检查会失败。starter 留到 A6 再接。
+3. 在终端运行 `aws sts get-caller-identity`，`Arn` 里要有 **`voclabs`**。如果是 `runserver`，说明终端没拿到你账号的密钥：Lab 右上角 **AWS Details → AWS CLI: Show**，把 `[default]` 那几行粘进 `~/.aws/credentials`（`nano ~/.aws/credentials`）。密钥约 4 小时过期，不要发群里或提交到仓库。
+4. 这一步**不要**先在你的账号里接 starter 的 SQS 触发器，否则测试消息会被 starter 先拿走，检查会失败。starter 留到 A6 再接。
 
 ## 方法一：一键脚本（推荐，约 2 分钟）
 

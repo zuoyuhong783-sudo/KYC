@@ -18,8 +18,20 @@ PREFIX="raw/selfie/"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+CALLER_ARN="$(aws sts get-caller-identity --query Arn --output text)"
+case "$CALLER_ARN" in
+  *voclabs*) ;;
+  *)
+    echo "!! 当前身份不是你的 Learner Lab 账号：$CALLER_ARN"
+    echo "   1) 确认 Lab 左上角是绿点（Start Lab）"
+    echo "   2) AWS Details -> AWS CLI: Show，把 [default] 那几行粘进 ~/.aws/credentials"
+    echo "   3) aws sts get-caller-identity 的 Arn 里出现 voclabs 后再运行本脚本"
+    echo "   (Set ALLOW_ANY_IDENTITY=1 to skip this check outside Learner Lab.)"
+    [ "${ALLOW_ANY_IDENTITY:-}" = "1" ] || exit 1
+    ;;
+esac
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
-echo "Account: $ACCOUNT_ID   Region: $REGION   Bucket: $BUCKET"
+echo "Account: $ACCOUNT_ID   Region: $REGION   Bucket: $BUCKET   Identity: $CALLER_ARN"
 
 # Turn a one-line JSON document into a JSON string value (no newlines/backslashes inside).
 json_str() { printf '"%s"' "$(printf '%s' "$1" | sed 's/"/\\"/g')"; }
