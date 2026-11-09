@@ -39,14 +39,15 @@
 
 ## 2. 告警 `vericloud-ops-alarm`
 
-SNS 主题 `vericloud-ops-alarm` 由 F 建并确认订阅；E 负责建下面两条告警。
+SNS 主题 `vericloud-ops-alarm` 由 F 建并确认订阅；E 负责建下面三条告警。
 
 | 告警名 | 指标 | 条件 | 周期 / 评估 | 缺数据处理 |
 |---|---|---|---|---|
-| `vericloud-lambda-errors` | `AWS/Lambda Errors`（四个函数合计） | Sum > 5 | 300 s / 1 个周期 | `notBreaching` |
+| `vericloud-worker-errors` | `AWS/Lambda Errors`，**只覆盖 `vericloud-ocr` / `-face` / `-notify`** | Sum > 5 | 300 s / 1 个周期 | `notBreaching` |
 | `vericloud-dlq-not-empty` | `AWS/SQS ApproximateNumberOfMessagesVisible`（DLQ） | Maximum > 0 | 300 s / 1 个周期 | `notBreaching` |
+| `vericloud-workflow-failed` | `AWS/States ExecutionsFailed` | Sum > 0 | 300 s / 1 个周期 | `notBreaching` |
 
-**两条告警的分工要写进报告**：预检失败是**预期业务结果**，只看 Errors 会在正常流量下反复触发；DLQ 深度才是"真的被拒收"的信号。Error 告警保留，用于捕获那些还没进队列就死掉的调用。
+**三条告警的分工要写进报告**：预检失败是**预期业务结果**，所以 `starter` 的报错**故意不接入** error 告警（20 个坏文件 × 3 次重试 ≈ 60 次报错，接进去每轮必响）；quarantine 用 DLQ 深度表达。error 告警只覆盖"本不该失败"的三个 worker；workflow 告警捕获在 worker 之前就中止的执行。
 
 **压测时的预期现象**：20% 坏文件 → DLQ 告警**必然触发**。这不是事故；反过来，收到的那封邮件就是 E5 最有力的证据（比静态配置截图强）。
 
@@ -54,13 +55,15 @@ SNS 主题 `vericloud-ops-alarm` 由 F 建并确认订阅；E 负责建下面两
 
 ## 3. 截图清单（存 `screenshots/`，命名按 01 方案 §12.5）
 
-| 文件 | 内容 | 截止 |
-|---|---|---|
-| `6_dashboard_overview_E.png` | 三行总览，压测时间窗 | 11-18 |
-| `6_dashboard_latency_E.png` | Duration p90/p99 曲线放大 | 11-18 |
-| `6_sqs_depth_E.png` | 入口队列 + DLQ 消息数 | 11-18 |
-| `6_alarm_config_E.png` | 两条告警的配置页 | 11-20 |
-| `6_alarm_email_E.png` | 收到告警邮件（打码） | 11-20 |
+**落点（E-09）**：原始截图存共享盘 `screenshots/`（按 01 §12.5 命名）；**入报告的图放 `report/figures/`**（Ch6 里写 `figures/xxx`，相对 `report/main.tex` 解析）。根目录的 `figures/` 是 D 的图，不要混。
+
+| 原始截图（screenshots/） | 入报告（report/figures/） | 内容 | 截止 |
+|---|---|---|---|
+| `6_dashboard_overview_E.png` | `fig_e_dashboard.png` | 三行总览，压测时间窗 | 11-18 |
+| `6_dashboard_latency_E.png` | `fig_e_latency.pdf` | Duration p90/p99 曲线放大 | 11-18 |
+| `6_sqs_depth_E.png` | —（并入 dashboard） | 入口队列 + DLQ 消息数 | 11-18 |
+| `6_alarm_config_E.png` | —（表格代替） | 三条告警的配置页 | 11-20 |
+| `6_alarm_email_E.png` | `fig_e_alarm.png` | 收到告警邮件（打码） | 11-20 |
 
 报告里对应 `figures/fig_e_dashboard.png`、`figures/fig_e_alarm.png`（02 指南 §1 的命名）。
 

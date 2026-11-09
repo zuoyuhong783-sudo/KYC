@@ -4,7 +4,7 @@
 > 对照：`02_VeriCloud_Overleaf协同写作与排版指南.md` §1 / §3.3 / §3.5
 > 本地提交：`a6ac32f [E] tests: ...`（rebase 后）
 > **2026-11-06 16:30 修订**：A 已发布 `docs/interface.md` v1.0，§9 把素材定为 **6 类 / 5 列**；
-> 本文中"27 例 / `expected_reason` / `capture`"均为对齐前的旧描述，实际以 `manifest.csv`（23 例）为准。
+> **2026-11-09 再修订**：manifest 已按 v1.3 提案升到 **27 例 / 8 类 / 6 列**；`--sse` 已移除；延迟改三口径。本文其余段落为 11-06 快照，以 `docs/e_delivery_status.md` 为准。
 > **远端状态：`main` 领先 `origin/main` 1 个提交，push 未完成（缺 GitHub 凭证）**
 
 图例：✅ 可上传，无需改动 ｜ ⚠️ 可上传，但需在下一个提交里补 ｜ ⛔ 阻塞，需别人给东西
@@ -24,10 +24,10 @@
 | 文件名 | 我做了什么 | 功能 / 作用 | 谁需要 | 对方还要做什么 |
 |---|---|---|---|---|
 | `tests/gen_fixtures.py` | 1012×638 合成证件、GB 11643 合法校验位、区间有效期、SAMPLE 水印、坏文件、SHA256SUMS、`--check` 比脸自检 | 全组唯一造素材入口；保证 B/C/D 用的是同一套图 | **B / C / D**（造图与单测）、**A**（归档） | B/C/D：从共享盘取图后先 `shasum -c SHA256SUMS`；不要自己改脚本参数另造一套 |
-| `tests/load_test.py` | 60 s / 100 申请；uniform 与 burst 两档；坏文件按概率混入；`--presign-module` 接 C 的实现；`--sse` 补头；素材缺失直接 exit 1 | 产出 `results/load_test_rN_submitted.csv`，是全部延迟与调用量数字的唯一来源 | **自己**；**A**（A6 联调可复用）；**C**（提供 presign 函数名）；**F**（要调用量） | C：交付 `security/presign.py` 后告知函数名，E 改 `--presign-func`；F：用 `submitted.csv` 行数算实测成本 |
+| `tests/load_test.py` | 60 s / 100 申请；uniform 与 burst 两档；坏文件按概率混入；`--presign-module` 接 C 的实现；素材缺失直接 exit 1 | 产出 `results/load_test_rN_submitted.csv`，是全部延迟与调用量数字的唯一来源 | **自己**；**A**（A6 联调可复用）；**C**（提供 presign 函数名）；**F**（要调用量） | C：交付 `security/presign.py` 后告知函数名，E 改 `--presign-func`；F：用 `submitted.csv` 行数算实测成本 |
 | `tests/collect_results.py` | service 与 end-to-end 双口径延迟；DLQ 按 `application_id` 集合比对（`20/20` 式证据）；空样本直接 exit 不再输出 `nan`；导出 LaTeX 表 | 把 DynamoDB + DLQ 变成报告里可核对的数字 | **自己**；**F**（取数）；**A**（数字关抽查） | F：压测后向 E 索取 `summary.csv`，不得自行估算；A：数字关按 `results/` 核对 |
 | `tests/preflight.py` | 资源存在性 + §9.2 一致关红线：桶四项私有、SSE-S3、生命周期 7 天、`maxReceiveCount=3`、DLQ 14 天、可见性超时、Lambda python3.12/1024MB/60s、状态机 STANDARD | 一条命令替 C/D 抓配置红线；Learner Lab 会话恢复后的自检 | **A / C / D**（联调前）、**自己**（每次压测前） | C/D：看到 ❌ 先修再联调，不要绕过 |
-| `tests/fixtures/manifest.csv` | 23 例、6 类、5 列（`case_id,id_card_file,selfie_file,category,expected_status`，严格按 §9） | 单测与压测的**唯一事实来源** | **B / C / D** | D：Choice 的 `reason` 字符串仍按 §12.3（`face_error`/`similarity_below_80`/`auto_approved`）；FAIL 的 `id_expired`/`ocr_failed` 待 §9 升 v1.1 后补用例 |
+| `tests/fixtures/manifest.csv` | 27 例、8 类、6 列（含 `expected_reason`，按 v1.3 提案） | 单测与压测的**唯一事实来源** | **B / C / D** | D：Choice 的 `reason` 字符串仍按 §12.3（`face_error`/`similarity_below_80`/`auto_approved`）；FAIL 的 `id_expired`/`ocr_failed` 待 §9 升 v1.1 后补用例 |
 | `tests/fixtures/README.md` | 目录约定、六类预期、四个设计决定、造图规则、共享盘校验流程 | 素材的"说明书"，防止 B/C/D 各理解一套 | **B / C / D** | 按第 4 节规则造图；`printed` 5 张由 E 提供，不要自行替换 |
 | `tests/README.md` | 一次性准备、造图、自检、压测四步（含 purge 时序）、指标口径表、五个常见坑 | 全组运行手册；**指标口径表是数字关的核对依据** | **A / B / C / D / F** | A：联调按第 3、4 节顺序执行；F：成本按第 5 节口径理解"调用量" |
 | `tests/requirements.txt` | boto3 / requests / Pillow / numpy / pandas / matplotlib | 依赖锁定，避免版本差异导致的复现失败 | **全组** | 各自 `pip install -r tests/requirements.txt` |
@@ -188,7 +188,7 @@ git push origin main
 
 > E 已推 `3d68282`：`tests/`（造图 / 压测 / 汇总 / 契约自检）、`report/sections/sec6_testing.tex`（Ch6 骨架）、`docs/`、`.gitignore`。
 > 三件事需要确认：
-> 1. **A**：共享盘放 23 例素材的目录（图片不进 git，否则每人各跑一套图，`SHA256SUMS` 失效）；`report/sections/` 保留还是删。
+> 1. **A**：共享盘放 27 例素材的目录（图片不进 git，否则每人各跑一套图，`SHA256SUMS` 失效）；`report/sections/` 保留还是删。
 > 2. **B**：fixture 卡面有效期印**区间** `2016.01.25-2038.03.11`，`expiry_date` 仍输出右端 `YYYY-MM-DD`，请确认正则；证件号带合法校验位，别按假号处理。
 > 3. **C / D**：`tests/preflight.py` 会校验桶私有 + SSE-S3 + 生命周期 7 天 + 重试 3 次 + DLQ 14 天，联调前先跑一遍。
 
@@ -208,7 +208,7 @@ git push origin main
 | 延迟口径错 | ✅ 已修 | service 与 e2e 双列，空样本 exit |
 | 坏文件集中在前 20 个 | ✅ 已修 | 按概率混入全窗口 |
 | 无 burst 对照 | ✅ 已修 | `--profile burst` |
-| 绕过 C 的 presign | ✅ 已修 | `--presign-module` + `--sse` |
+| 绕过 C 的 presign | ✅ 已修 | `--presign-module`（`--sse` 因签名不匹配已移除） |
 | Ch6 缺 Alerting / 预写结论 / 无引用 | ✅ 已修 | `sec:alerting` + 告警表 + 结果段改 TODO |
 | preflight 不查红线 | ✅ 已修 | 桶/队列/Lambda/状态机共 9 项 |
 | Ch6 36 s 与 60 s 矛盾 | ⚠️ **未修** | 见 2.1 |
@@ -226,5 +226,5 @@ git push origin main
 | 今天 | 改 2.1 的 36→360，第二个提交推上去 | D 确认 starter 超时 |
 | 11-07 | 收 ≥2 人照片 → 生成 → `--check`（含 2.3 补的两段）→ 首批 5 组交 B | B/C/D/F/A 各 1 张 |
 | 11-08 | 打印 5 张 → 手机拍 → 覆盖 `normal_01..05` → 在共享盘清单标注 `printed` | 打印机 |
-| 11-08 | 全量 23 例 + `SHA256SUMS` 打包上传共享盘，通知三人校验 | A 给目录 |
+| 11-10 | 全量 27 例 + `SHA256SUMS` 打包上传共享盘，通知三人校验 | A 给目录 |
 | 11-10 | 若 `--check` 发现模糊组实为 `similarity_below_80`，改 manifest 并通知 C/D | C 的 face Lambda 可跑 |

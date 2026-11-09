@@ -7,7 +7,8 @@
 %   · 本节用 \section 起头（main.tex 不再包一层）
 %   · 只写正文，不要 \documentclass / \begin{document}
 %   · 数字必须来自 results/*.csv，禁止手抄、禁止估
-%   · 图：figures/fig_e_*.pdf|png；表：tables/tab_e_loadtest.tex
+%   · 图：文件放 report/figures/，LaTeX 里仍写 figures/xxx（相对 report/main.tex 解析）
+%   · 表：tables/tab_e_loadtest.tex（由 collect_results.py --latex 生成）
 %   · 特殊字符：\% $\geq$ $\times$，下划线用 \_
 %
 %  待 A 审核的跨人引用：
@@ -47,15 +48,17 @@ Section~\ref{sec:fault}~\cite{aws2024cloudwatch}:
         indicator of back-pressure.
 \end{itemize}
 
-Latency is reported under two explicit clocks, because a single number would
-hide where the time is spent. The \emph{service latency} is measured from the
-\texttt{created\_at} timestamp written by the pre-check Lambda to the
-\texttt{processed\_at} timestamp written when the record is persisted, and
-therefore excludes S3 event delivery and the cold start of the first function.
-The \emph{end-to-end latency} is measured from the client-side completion of the
-selfie upload to \texttt{processed\_at}, and is the number a user would
-experience. Reporting both prevents the common mistake of quoting a
-service-internal figure as the user-visible response time.
+Latency is reported under three explicit clocks, because a single number hides
+where the time is spent. \emph{Ingress latency} runs from the completion of the
+client upload (\texttt{created\_at}, the S3 \texttt{eventTime}) to the moment
+the pre-check Lambda starts (\texttt{received\_at}), and therefore covers event
+delivery, queueing and the cold start of the first function. \emph{Service
+latency} runs from \texttt{received\_at} to \texttt{processed\_at} and covers
+only pipeline work. \emph{End-to-end latency} runs from the client-side
+completion of the selfie upload (\texttt{t\_submit\_utc}) to
+\texttt{processed\_at}, and is the number a user would experience. Separating
+the three prevents the common mistake of quoting a service-internal figure as the
+user-visible response time.
 
 Percentiles are preferred to the arithmetic mean for a second reason: the
 distribution of end-to-end latency in an event-driven pipeline is right-skewed,
@@ -78,9 +81,9 @@ Twenty percent of the packages are deliberately corrupted (zero-byte files,
 non-image payloads renamed to \texttt{.jpg}, and truncated JPEG streams), mixed
 uniformly into the whole submission window rather than front-loaded, so that the
 dead-letter path is exercised concurrently with the happy path. A separate
-functional suite of 23 fixtures covers the verdicts reachable with the current
-fixture taxonomy---\texttt{PASS}, \texttt{NEEDS\_HUMAN\_REVIEW} and
-\texttt{DLQ}---as summarised in Table~\ref{tab:fixtures}.
+functional suite of 27 fixtures covers all four verdicts---\texttt{PASS},
+\texttt{NEEDS\_HUMAN\_REVIEW}, \texttt{FAIL} and \texttt{DLQ}---as
+summarised in Table~\ref{tab:fixtures}.
 
 \begin{table}[htbp]
   \centering
@@ -95,8 +98,12 @@ fixture taxonomy---\texttt{PASS}, \texttt{NEEDS\_HUMAN\_REVIEW} and
     Identity mismatch & \texttt{NEEDS\_HUMAN\_REVIEW} & 3 \\
     Blurred selfie & \texttt{NEEDS\_HUMAN\_REVIEW} & 2 \\
     Face-less selfie & \texttt{NEEDS\_HUMAN\_REVIEW} & 2 \\
+    Expired document & \texttt{FAIL} & 2 \\
+    Missing OCR field & \texttt{FAIL} & 2 \\
     Zero-byte upload & DLQ & 2 \\
     Wrong format / truncated & DLQ & 4 \\
+    \midrule
+    Total & & 27 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -110,9 +117,9 @@ be reproducible by another.
 
 All experiments run in \texttt{us-east-1} on AWS Academy Learner Lab. The four
 Lambdas use the Python 3.12 runtime with 1024\,MB of memory and a 60\,s timeout;
-the state machine is a Standard workflow; the ingestion queue has a 36\,s
-visibility timeout, six times the pre-check timeout, so that a message is never
-retried while it is still being processed.
+the state machine is a Standard workflow; the ingestion queue uses a 360\,s
+visibility timeout, six times the 60\,s Lambda timeout, so that a message is
+never redelivered while it is still being processed.
 
 \subsection{Alerting and Operational Response}\label{sec:alerting}
 
@@ -130,19 +137,22 @@ shown in Fig.~\ref{fig:alarm}.
     \toprule
     Alarm & Condition & Period & Rationale \\
     \midrule
-    Lambda errors & Errors $>$ 5 & 5 min & Worker or pre-check failures \\
+    Worker errors & Errors $>$ 5 & 5 min & Only ocr / face / notify \\
     DLQ depth & Visible $>$ 0 & 5 min & A package was rejected for good \\
+    Workflow failures & Failed $>$ 0 & 5 min & The state machine aborted \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The two alarms are deliberately not redundant. A failed pre-check is an expected
-business outcome for a corrupted upload, so an error-count alarm alone fires
-during normal operation and quickly becomes noise. Queue depth in the
-dead-letter queue is the signal that actually matters, because a message reaches
-it only after the configured number of retries has been exhausted; the error
-alarm is kept as a secondary indicator for failures that never reach the queue,
-such as an invocation that dies before acknowledging its message.
+The three alarms are deliberately not redundant. Pre-check rejections are an
+expected business outcome and are therefore observed through dead-letter depth
+rather than through Lambda error counts; the error alarm covers only the workers
+that should never fail (\texttt{vericloud-ocr}, \texttt{vericloud-face} and
+\texttt{vericloud-notify}), so that a corrupted upload cannot make it ring.
+Queue depth is the signal that actually matters for quarantine, because a message
+reaches the dead-letter queue only after the configured number of retries has
+been exhausted; the workflow alarm catches executions that abort before any
+worker-level error is recorded.
 
 \begin{figure}[htbp]
   \centering
@@ -199,7 +209,11 @@ behaviour is out of scope.
 
 A further caveat concerns the fixtures themselves. Most documents are rendered
 synthetically, which keeps personal data out of the repository but also removes
-the lighting, tilt and sensor noise of a real capture.
+the lighting, tilt and sensor noise of a real capture. The ten normal packages
+are drawn from a small number of enrolled identities
+% TODO(E) 11-25: 把 N 换成实际参与人数
+(\texttt{N} distinct selfies), so the suite measures pipeline behaviour rather
+than the demographic accuracy of the face model.
 
 % TODO(E) 11-08 之后：若已打印并重拍 5 张 normal，替换为下面两句（否则不要写）：
 % A small number of normal cases are printed at 300 dpi and re-photographed with

@@ -43,11 +43,16 @@ Raw result data used in the report. Every number in the report must be traceable
 | `dlq` | 本轮 application_id 在 DLQ 中命中的条数（按消息体比对，不是队列累计值） |
 | `dlq_corrupted` | `命中数/本轮坏文件数`，例如 `20/20` |
 | `pending` | 既不在表里也不在 DLQ 的申请数（>0 说明有问题） |
-| `p50_s` … `p99_s` | **service latency**：`created_at` → `processed_at` |
+| `reason_match` | `reason` 与 manifest 的 `expected_reason` 一致数 / 可比对数 |
+| `queue_p50_s` / `queue_p95_s` | **ingress latency**：`created_at`（S3 eventTime）→ `received_at` |
+| `p50_s` … `p99_s` | **service latency**：`received_at` → `processed_at`（无 `received_at` 时退回 `created_at`，会打印警告） |
 | `e2e_p50_s` … `e2e_p99_s` | **end-to-end**：`t_submit_utc` → `processed_at` |
 | `match_rate` | 预期结论与实际一致的用例数 / 可比对用例数 |
 
 口径定义同步写在 `tests/README.md` §5 与 Ch6 §6.1，三处必须一字不差。
+
+**时钟前提**：`e2e_*` 用客户端的 `t_submit_utc`，要求压测机已完成 NTP 同步；
+若超过 5% 的值为负，`collect_results.py` 会告警，此时只引用 service 口径。
 
 ## 4. 使用规则
 

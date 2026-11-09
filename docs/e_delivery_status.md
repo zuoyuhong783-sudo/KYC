@@ -1,6 +1,6 @@
 # E（Li Hengchen）交付状态板
 
-> 更新：2026-11-09 ｜ 角色：QA & Monitoring Engineer
+> 更新：2026-11-09 15:30 ｜ 角色：QA & Monitoring Engineer
 > 契约：`docs/interface.md` **v1.2**（桶 `vericloud-raw-1009`、区域 `us-east-1`、长期有效期 `9999-12-31`）
 > 对应：01 方案 §4.5（E1–E9）、§5 交接契约表、§9.2 四道关卡
 
@@ -14,16 +14,17 @@
 
 | 文件 | 内容 | 交给谁 |
 |---|---|---|
-| `tests/gen_fixtures.py` | 合成证件（GB 11643 校验位、区间有效期、SAMPLE 水印）、换人/模糊/无脸/坏文件生成、`--check` 比脸自检、SHA256SUMS | **B / C / D** |
+| `tests/gen_fixtures.py` | 合成证件（GB 11643 校验位、区间有效期、SAMPLE 水印、卡底编号只留后 4 位）、换人/模糊/无脸/过期/字段缺失/坏文件、`--check` 比脸自检、SHA256SUMS（**待真实素材生成后入库**） | **B / C / D** |
 | `tests/load_test.py` | 60 s / 100 申请；uniform 与 burst 两档；坏文件按概率混入；**已接 C 的 `security.presign`**；`--sse`；素材缺失即 exit 1 | **C**（确认 presign 调用）、**F**（取调用量） |
 | `tests/collect_results.py` | 双口径延迟（service / end-to-end）、DLQ 按 `application_id` 逐条比对、`--purge-only`、自动生成 LaTeX 表 | **F**、**A**（数字关） |
-| `tests/preflight.py` | 资源 + 契约红线自检（桶私有 / SSE-S3 / 生命周期 / 重试 3 次 / DLQ 14 天 / Lambda 规格 / STANDARD） | **A / C / D** |
-| `tests/fixtures/manifest.csv` | 23 例、6 类、5 列，严格按 §9 | **B / C / D** |
+| `tests/preflight.py` | 资源 + 红线 + **三条连线**（S3→SQS、SQS→starter、Streams→notify）；SNS 未建不再算阻塞 | **A / C / D** |
+| `tests/fixtures/manifest.csv` | 27 例、8 类、6 列（按 v1.3 提案，含 `expected_reason`） | **B / C / D** |
 | `tests/fixtures/README.md` | 素材规格、造图规则、自检与分发流程 | **B / C / D** |
 | `tests/README.md` | 运行手册：准备 → 造图 → 自检 → preflight → 压测 → 收集 | **全组** |
+| `tests/check_precheck.py` | 本地判断坏文件会不会被 starter 拦下（复现 2000 B 截断漏网） | **D**（据此改预检） |
 | `tests/requirements.txt` | Python 依赖 | 全组 |
 | `report/sections/sec6_testing.tex` | **Ch6 正文初稿**：指标与双口径、负载与故障注入、告警设计、讨论与局限；结果段留 TODO | **A**（统稿） |
-| `docs/e_monitoring_spec.md` | 仪表盘三行 widget 与两条告警的配置规格 + 截图清单 | **A**、自己（11-18/20 建） |
+| `docs/e_monitoring_spec.md` | 仪表盘三行 widget 与三条告警（worker / DLQ / workflow）的配置规格 + 截图落点 | **A**、自己（11-18/20 建） |
 | `docs/e_bib_entries.bib` | `aws2024cloudwatch` 条目 | **F**（追加进 `references.bib`） |
 | `results/README.md` | 压测 CSV 的字段与口径，供 F 取数、A 抽查 | **F / A** |
 | `docs/e_cost_review_checklist.md` | E8 复核清单（单价 / 调用量 / 70% 结论） | **F** |
@@ -63,7 +64,7 @@
 ## 四、需要别人拍板
 
 1. **A**：批准 §9 增两类（`expired`、`missing_field`），否则 `FAIL` 分支没有真实用例。
-2. **A**：共享盘放 23 例素材的目录（图片不进 git）。
+2. **A**：共享盘放 27 例素材的目录（图片不进 git）。
 3. **B**：确认 OCR 正则按"区间有效期 + 长期 = 9999-12-31"写（interface v1.2）。
 4. **C**：确认压测调用 `generate_upload_urls(application_id)` 的方式与其 `profile` 约定一致。
 
@@ -71,6 +72,6 @@
 
 ## 五、提交状态
 
-- 本地 `main` 领先 `origin/main` **4 个提交**，落后 0；工作区干净。
+- 本地 `main` 领先 `origin/main`（本轮修复已提交），落后 0；工作区干净。
 - **push 未完成**：本机无 GitHub 凭证（无 `~/.git-credentials`、无 SSH key、无 `gh`）。
   命令：`git -c credential.helper= push https://<用户名>:<PAT>@github.com/zuoyuhong783-sudo/KYC.git main`

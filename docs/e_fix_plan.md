@@ -31,7 +31,7 @@
 
 ## P0-1 先把东西推上去（10 分钟，今天就做）
 
-远端现在只有 `LICENSE` 和一行 `# KYC`，`git status` 全是 `??`。这不叫"已交付"。
+> 2026-11-09 注：本节描述的仓库状态已过期。远端已有 13+ 个提交、`tests/` 等目录；最新状态见 `docs/e_delivery_status.md`。
 
 ```bash
 cd ~/Desktop/kyc
@@ -554,8 +554,8 @@ derived from the failure taxonomy in Section~\ref{sec:fault}.
 ```latex
 All experiments ran in \texttt{us-east-1} on AWS Academy Learner Lab. The four
 Lambdas use the Python 3.12 runtime with 1024\,MB of memory and a 60\,s timeout;
-the state machine is a Standard workflow; the ingestion queue has a 36\,s
-visibility timeout, which is six times the starter timeout, so that a message is
+the state machine is a Standard workflow; the ingestion queue uses a 360\,s
+visibility timeout, six times the 60\,s Lambda timeout, so that a message is
 never retried while still being processed.
 ```
 

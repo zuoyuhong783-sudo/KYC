@@ -34,6 +34,8 @@ def main() -> None:
     ap.add_argument("--region", default="us-east-1")
     ap.add_argument("--allow-missing-functions", action="store_true",
                     help="M2 之前跑：允许 Lambda 还不存在")
+    ap.add_argument("--allow-missing-topics", action="store_true",
+                    help="M2 之前跑：允许 SNS 主题还没建（F 尚未交付）")
     args = ap.parse_args()
 
     import boto3
@@ -91,8 +93,10 @@ def main() -> None:
         record("raw/ 生命周期 7 天", False, "未配置生命周期规则", blocking=False)
 
     # 2) DynamoDB
+    table_desc: dict = {}
     try:
         desc = session.client("dynamodb").describe_table(TableName=args.table)["Table"]
+        table_desc = desc
         streams = desc.get("StreamSpecification", {}).get("StreamEnabled", False)
         record("DynamoDB 表", desc.get("TableStatus") == "ACTIVE",
                f"{args.table} status={desc.get('TableStatus')} streams={'ON' if streams else 'OFF'}")
@@ -122,6 +126,46 @@ def main() -> None:
         except (BotoCoreError, ClientError) as exc:
             record(f"SQS {name}", False, str(exc))
 
+    # 3b) 连线：资源全绿但线没接，包会全丢
+    lam = session.client("lambda")
+    queue_arn = None
+    try:
+        q_url = sqs.get_queue_url(QueueName=args.queue)["QueueUrl"]
+        queue_arn = sqs.get_queue_attributes(
+            QueueUrl=q_url, AttributeNames=["QueueArn"])["Attributes"]["QueueArn"]
+
+        try:
+            conf = s3.get_bucket_notification_configuration(Bucket=args.bucket)
+            qc = conf.get("QueueConfigurations", [])
+            hit = [c for c in qc if c.get("QueueArn") == queue_arn
+                   and any(r.get("Name") == "prefix" and r.get("Value") == "raw/selfie/"
+                           for r in c.get("Filter", {}).get("Key", {}).get("FilterRules", []))]
+            record("S3→SQS 通知（raw/selfie/）", bool(hit),
+                   f"{len(qc)} 条队列通知，命中 {len(hit)} 条")
+        except (BotoCoreError, ClientError) as exc:
+            record("S3→SQS 通知（raw/selfie/）", False, str(exc))
+
+        try:
+            m = lam.list_event_source_mappings(EventSourceArn=queue_arn,
+                                               FunctionName="vericloud-starter")["EventSourceMappings"]
+            record("SQS→starter 事件源", any(x["State"] == "Enabled" for x in m), f"{len(m)} 个映射")
+        except (BotoCoreError, ClientError) as exc:
+            record("SQS→starter 事件源", False, str(exc))
+
+        stream_arn = table_desc.get("LatestStreamArn")
+        if stream_arn:
+            try:
+                m = lam.list_event_source_mappings(EventSourceArn=stream_arn,
+                                                   FunctionName="vericloud-notify")["EventSourceMappings"]
+                record("Streams→notify 事件源", any(x["State"] == "Enabled" for x in m),
+                       f"{len(m)} 个映射", blocking=False)
+            except (BotoCoreError, ClientError) as exc:
+                record("Streams→notify 事件源", False, str(exc), blocking=False)
+        else:
+            record("Streams→notify 事件源", False, "表没有 Stream ARN（Streams 未开启）", blocking=False)
+    except (BotoCoreError, ClientError) as exc:
+        record("S3→SQS 通知（raw/selfie/）", False, f"取队列 ARN 失败：{exc}")
+
     # 4) Step Functions
     try:
         sfn = session.client("stepfunctions")
@@ -137,12 +181,12 @@ def main() -> None:
         topics = {t["TopicArn"].split(":")[-1] for t in session.client("sns").list_topics()["Topics"]}
         for name in args.topics.split(","):
             name = name.strip()
-            record(f"SNS {name}", name in topics, "已存在" if name in topics else "未创建")
+            record(f"SNS {name}", name in topics, "已存在" if name in topics else "未创建",
+                   blocking=(not args.allow_missing_topics and name != "vericloud-ops-alarm"))
     except (BotoCoreError, ClientError) as exc:
         record("SNS", False, str(exc))
 
     # 6) Lambda 运行时与规格
-    lam = session.client("lambda")
     for name in args.functions.split(","):
         name = name.strip()
         try:

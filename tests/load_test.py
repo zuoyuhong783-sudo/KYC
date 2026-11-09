@@ -101,7 +101,6 @@ def main() -> None:
                     help="模块内的函数名，签名需为 (bucket, key) -> str")
     ap.add_argument("--aws-profile", default=None,
                     help="C 的 presign 默认用 profile 'lab'；用环境变量凭证时留空")
-    ap.add_argument("--sse", action="store_true", help="上传时带 SSE-S3 头（桶策略要求时用）")
     ap.add_argument("--out", default="results/load_test_r1_submitted.csv")
     ap.add_argument("--repo-root", default=".")
     ap.add_argument("--region", default="us-east-1")
@@ -189,9 +188,9 @@ def main() -> None:
         started = time.monotonic()
         code_id = code_selfie = 0
         err = ""
+        # 只带 Content-Type：桶已配默认 SSE-S3，额外带未签名的 x-amz-* 头会导致
+        # SignatureDoesNotMatch（预签名 URL 的签名覆盖了 SignedHeaders）
         headers = {"Content-Type": "image/jpeg"}
-        if args.sse:
-            headers["x-amz-server-side-encryption"] = "AES256"
         try:
             body_id = (root / case["id_card_file"]).read_bytes() if case.get("id_card_file") else b""
             body_selfie = (root / case["selfie_file"]).read_bytes() if case.get("selfie_file") else b""

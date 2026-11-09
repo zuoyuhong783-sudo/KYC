@@ -163,7 +163,7 @@ def make_card(*, name: str, id_number: str, expiry: str, authority: str,
             d.rectangle((FIELD_X - 6, y + 28, FIELD_X + 520, y + 78), fill=(233, 239, 245))
         y += 104
 
-    d.text((60, CARD_H - 44), "编号 " + id_number, font=f_small, fill=(150, 160, 175))
+    d.text((60, CARD_H - 44), "编号 ****" + id_number[-4:], font=f_small, fill=(150, 160, 175))
     return add_watermark(card)
 
 
@@ -226,10 +226,6 @@ def generate(args) -> None:
             "authority": rng.choice(AUTHORITIES),
         }
 
-    if args.expired or args.missing_field:
-        print("[warn] expired / missing_field 不在 interface §9 的 6 个类别内，"
-              "需 A 升 v1.1 后才算正式用例；当前仅作本地探索用")
-
     made = 0
 
     # normal
@@ -280,14 +276,20 @@ def generate(args) -> None:
         made += 1
 
     # corrupted：自拍是坏文件（自拍才是触发信号）
+    #   zero_byte_XX          0 字节
+    #   wrong_format_01..02   文本改名 .jpg
+    #   wrong_format_03       JPEG 截断 600 B（PIL 打不开）
+    #   wrong_format_04       JPEG 截断 2000 B（PIL 能打开，需 §5.2 补完整性判定）
     good = Image.open(id_dir / "normal_01.jpg") if (id_dir / "normal_01.jpg").exists() else None
     for i in range(1, args.corrupt + 1):
         (broken_dir / f"zero_byte_{i:02d}.jpg").write_bytes(b"")
         (broken_dir / f"wrong_format_{i:02d}.jpg").write_text("This is not a JPEG image.\n", encoding="utf-8")
-        if good is not None:
-            buf = io.BytesIO()
-            good.save(buf, "JPEG", quality=90)
-            (broken_dir / f"wrong_format_{args.corrupt + i:02d}.jpg").write_bytes(buf.getvalue()[:600])
+    if good is not None:
+        buf = io.BytesIO()
+        good.save(buf, "JPEG", quality=90)
+        full = buf.getvalue()
+        for offset, size in enumerate((600, 2000), start=args.corrupt + 1):
+            (broken_dir / f"wrong_format_{offset:02d}.jpg").write_bytes(full[:size])
 
     # degrade：把正常类再"拍一次"
     if args.degrade:
@@ -394,10 +396,8 @@ def main() -> None:
     ap.add_argument("--different-person", dest="different_person", type=int, default=3)
     ap.add_argument("--blur", type=int, default=2)
     ap.add_argument("--noface", type=int, default=2)
-    ap.add_argument("--expired", type=int, default=0,
-                    help="非 §9 类别，需 interface v1.1 批准后才用")
-    ap.add_argument("--missing-field", dest="missing_field", type=int, default=0,
-                    help="非 §9 类别，需 interface v1.1 批准后才用")
+    ap.add_argument("--expired", type=int, default=2)
+    ap.add_argument("--missing-field", dest="missing_field", type=int, default=2)
     ap.add_argument("--corrupt", type=int, default=2)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--check", action="store_true", help="只做交付前自检")
