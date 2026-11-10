@@ -4,4 +4,84 @@
 % =====================================================================
 \subsubsection{Data Schema and Notification}\label{sec:data}
 
-% TODO(F): write this part.
+\paragraph{Table design.}
+Verification results are stored in \texttt{vericloud-kyc-table}, a DynamoDB table
+with a single partition key \texttt{application\_id} (a UUID~v4 generated at
+upload time) and no sort key. The primary key is chosen so that the two parallel
+branches of the workflow can merge their outputs without coordination: OCR and
+face comparison both receive the same \texttt{application\_id}, and the state
+machine performs one \texttt{PutItem} under that key once both branches have
+returned. Because the key is generated upstream and carried through the
+pipeline, the write is idempotent --- replaying a message overwrites the same
+item rather than creating a duplicate application.
+
+Capacity is configured as \emph{on-demand}, which matches the bursty arrival
+profile of Section~\ref{sec:business:background}: there is no provisioned
+throughput to size and no charge when nothing is being written. Table~\ref{tab:schema}
+lists the stored fields.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Fields of \texttt{vericloud-kyc-table}.}
+  \label{tab:schema}
+  \begin{tabular}{@{}llp{6.4cm}@{}}
+    \toprule
+    Field & Type & Meaning \\
+    \midrule
+    \texttt{application\_id} & S & Partition key; UUID v4, shared by both processing branches \\
+    \texttt{created\_at} & S & Submission time, ISO~8601 UTC \\
+    \texttt{processed\_at} & S & Time at which the verdict was written \\
+    \texttt{name} & S & Extracted cardholder name (OCR branch) \\
+    \texttt{id\_number\_masked} & S & Document number with only the last four digits retained \\
+    \texttt{expiry\_date} & S & \texttt{YYYY-MM-DD}; \texttt{9999-12-31} denotes a long-term document \\
+    \texttt{issuing\_authority} & S & Authority that issued the document \\
+    \texttt{id\_valid} & BOOL & Whether the document was unexpired at processing time \\
+    \texttt{similarity} & N & Face similarity score, 0--100 (face branch) \\
+    \texttt{face\_error} & S & Error name when the face branch failed \\
+    \texttt{review\_status} & S & \texttt{PASS}, \texttt{NEEDS\_HUMAN\_REVIEW} or \texttt{FAIL} \\
+    \texttt{reason} & S & Machine-readable cause, e.g.\ \texttt{similarity\_below\_80} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Data minimisation.}
+The table deliberately stores \emph{no} image binaries and \emph{no} complete
+document number. Images remain in the private S3 bucket and expire through a
+lifecycle rule; the document number is truncated to its last four digits before
+it is ever written. An auditor can therefore confirm that a check was performed
+and on what grounds, without the database itself becoming a trove of identity
+documents. This is the data-minimisation principle applied at schema level rather
+than at policy level.
+
+\paragraph{Change notification.}
+DynamoDB Streams is enabled with the \texttt{NEW\_AND\_OLD\_IMAGES} view. The
+\texttt{vericloud-notify} Lambda is attached to the stream with a batch size of
+one, so that a malformed record cannot block an entire shard, and it publishes to
+the \texttt{vericloud-kyc-topic} SNS topic only when \texttt{review\_status} is
+newly created or has actually changed. Comparing the old and new images is what
+makes the design idempotent under at-least-once stream delivery: a redelivered
+record with an unchanged status produces no second email.
+
+The published message is intentionally minimal:
+
+\begin{lstlisting}[language=json, caption={SNS payload emitted by \texttt{vericloud-notify}.}, label={lst:sns}]
+{
+  "application_id": "3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b",
+  "review_status": "PASS",
+  "reason": "auto_approved",
+  "processed_at": "2026-11-20T08:30:41Z"
+}
+\end{lstlisting}
+
+The SNS subject line follows the form
+\texttt{[VeriCloud] Application <first 8 characters>: <status>}. Neither the
+subject nor the body contains the applicant's name, the document number, or any
+other personal identifier; the application UUID is sufficient for the applicant to
+recognise their own case and carries no information about them.
+
+Decoupling storage from notification in this way has a practical benefit beyond
+elegance. Because the stream is the only integration point, the notification
+channel can be changed --- email today, SMS or a mobile push later --- without
+touching the state machine, the Lambdas, or the table. The workflow knows nothing
+about how applicants are told.

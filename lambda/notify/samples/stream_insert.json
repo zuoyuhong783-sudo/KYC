@@ -1,0 +1,58 @@
+{
+  "Records": [
+    {
+      "eventID": "c1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1795240241,
+        "Keys": {
+          "application_id": {
+            "S": "3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b"
+          }
+        },
+        "NewImage": {
+          "application_id": {
+            "S": "3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b"
+          },
+          "created_at": {
+            "S": "2026-11-20T08:30:00Z"
+          },
+          "processed_at": {
+            "S": "2026-11-20T08:30:41Z"
+          },
+          "name": {
+            "S": "ZHANG SAN"
+          },
+          "id_number_masked": {
+            "S": "**************1234"
+          },
+          "expiry_date": {
+            "S": "2030-05-01"
+          },
+          "issuing_authority": {
+            "S": "XX Public Security Bureau"
+          },
+          "id_valid": {
+            "BOOL": true
+          },
+          "similarity": {
+            "N": "92.37"
+          },
+          "review_status": {
+            "S": "PASS"
+          },
+          "reason": {
+            "S": "auto_approved"
+          }
+        },
+        "SequenceNumber": "111111111111111111111",
+        "SizeBytes": 512,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:123456789012:table/vericloud-kyc-table/stream/2026-11-20T00:00:00.000"
+    }
+  ]
+}

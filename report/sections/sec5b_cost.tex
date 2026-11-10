@@ -4,4 +4,143 @@
 % =====================================================================
 \subsection{Total Cost of Ownership and Cloud Economics}\label{sec:cost}
 
-% TODO(F): write this part.
+\subsubsection{Model and Assumptions}\label{sec:cost:model}
+
+The economic claim of this project --- that a serverless pipeline is materially
+cheaper than provisioned infrastructure for this workload --- has to be
+falsifiable, so the comparison is built as an explicit cost model rather than as
+a single headline number. Both architectures are priced for the \emph{same}
+traffic: 10{,}000 applications per month (20{,}000 uploaded images, two per
+application) with a peak multiplier of ten times the baseline, in
+\texttt{us-east-1}, on on-demand pricing, excluding tax.
+
+Two choices of baseline deserve to be stated plainly, because they drive the
+result.
+
+\begin{itemize}
+  \item \textbf{The traditional side is sized for the peak, not the average.}
+        That is what a bank that must survive a promotional campaign actually
+        has to buy, and it is the assumption under which provisioning is
+        expensive. It is also the assumption most favourable to the traditional
+        architecture, since sizing for the average and accepting queueing at the
+        peak would make it cheaper on paper and worse in service.
+  \item \textbf{The traditional side is charged the same managed AI service as
+        the serverless side would be, and we exclude it.} In practice a bank
+        would also call a face-comparison service from its own servers. Because
+        the traditional column in Table~\ref{tab:tco} omits that charge, the
+        traditional baseline is slightly \emph{understated} and the reported
+        saving is therefore conservative.
+\end{itemize}
+
+Unit prices were taken from the AWS Pricing Calculator~\cite{aws2026pricing} for the four line items
+that dominate the result (EC2 \texttt{m5.large}, RDS \texttt{db.t3.medium},
+Step~Functions state transitions and Rekognition \texttt{CompareFaces}) and
+verified on 10 November 2026; the remaining line items are small enough that a
+mis-estimate of twenty per cent moves the total by less than one dollar.
+
+\subsubsection{Dimension-Level Comparison}\label{sec:cost:comparison}
+
+Table~\ref{tab:tco} groups the two bills by cost dimension. The pattern is more
+informative than the totals: compute, storage and database are exactly the
+dimensions where provisioned capacity is paid for continuously and serverless
+capacity is paid for per use, and they account for the whole of the difference.
+The two dimensions that are \emph{not} improved by the architecture --- managed
+AI inference and monitoring --- are small and are incurred either way.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Monthly cost by dimension at 10{,}000 applications per month (USD).}
+  \label{tab:tco}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Cost dimension & Traditional & Serverless \\
+    \midrule
+    Compute                     & 140.16 &  0.63 \\
+    Storage                     &  16.00 &  1.03 \\
+    Database                    &  61.14 &  0.03 \\
+    Messaging and orchestration &  15.18 &  3.11 \\
+    AI inference                &     -- & 10.00 \\
+    Monitoring                  &     -- &  1.00 \\
+    \midrule
+    \textbf{Total}              & \textbf{232.48} & \textbf{15.80} \\
+    \textbf{Saving}             & \multicolumn{2}{c}{\textbf{216.69 per month (93.2\%)}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The saving is 93.2\%, well above the 70\% projected in the proposal. Two points
+should be made about that gap. First, the proposal figure was an
+order-of-magnitude projection made before any service had been priced; the model
+reported here is built from verified unit prices and is therefore the number the
+team is prepared to defend. Second, the saving is large here because the workload
+is small and bursty. That is a property of the scenario, not a universal property
+of serverless computing, and the next subsection shows where it stops being true.
+
+\subsubsection{Sensitivity to Workload}\label{sec:cost:sensitivity}
+
+A single comparison at 10{,}000 applications could be dismissed as a
+conveniently chosen point, so the model is evaluated across three orders of
+magnitude of traffic (Figure~\ref{fig:tco}). The two curves have different
+shapes, and the shapes are the argument: the traditional bill is essentially
+flat, because the servers run whether or not anyone applies, while the
+serverless bill is essentially linear in the number of applications.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figures/fig_f_tco.pdf}
+  \caption{Monthly cost against workload. Provisioned capacity is flat; serverless
+           cost scales with usage. The advantage is largest at low and bursty
+           volume and narrows as traffic grows.}
+  \label{fig:tco}
+\end{figure}
+
+Three regimes are visible. At 1{,}000 applications per month the serverless bill
+is under two dollars and the saving is 99.3\%. At the modelled baseline of
+10{,}000 it is 15.80 against 232.48, a saving of 93.2\%. At 100{,}000
+applications the serverless bill reaches roughly 158 dollars while the
+traditional bill is unchanged, and the saving falls to about 32\%. Extrapolating
+the same line, the serverless cost overtakes the traditional cost at a little
+under 150{,}000 applications per month.
+
+That crossover is an honest finding rather than a defect, and it is worth stating
+explicitly in a report that is arguing \emph{for} serverless: at sustained high
+volume the linear cost of per-request billing eventually exceeds the fixed cost
+of capacity that is now fully utilised. The conclusion of this section is
+therefore conditional --- serverless wins decisively for the bursty, low-to-moderate
+volume profile that a retail onboarding campaign actually produces, and a bank at
+a different operating point should re-run the model rather than adopt this
+architecture by default.
+
+\subsubsection{Measured Cost}\label{sec:cost:measured}
+
+The figures above are a forecast. To test it, the load test of
+Section~\ref{sec:testing} is used to derive an empirical cost per application: the
+number of Lambda invocations, Step~Functions executions and S3 PUTs actually
+observed are multiplied by the same verified unit prices, giving a cost for 100
+applications that is then scaled to 10{,}000. Because a hundred applications cost
+well under a dollar, the meaningful quantity is the per-application cost, not the
+absolute spend of a single test run, and it is that per-application figure which
+is compared against the model of Table~\ref{tab:tco}. A material disagreement
+between the two would indicate that one of the workload assumptions --- image
+size, Lambda duration, or transitions per execution --- was wrong, and would be
+reported as a correction rather than smoothed over. One caveat applies to the
+comparison: the load test deliberately mixes corrupt files into the traffic, and
+those never reach the AI stage, so the measured per-application cost is expected
+to sit slightly \emph{below} the model's. The two are therefore compared on the
+valid applications only.
+
+\subsubsection{Limitations}\label{sec:cost:limitations}
+
+Three limitations bound the result. The model prices infrastructure only and
+excludes engineering labour and compliance staffing; since a provisioned stack
+needs materially more of both, excluding them biases the comparison \emph{against}
+serverless, which is the safe direction for our claim. Prices were read on a
+single date and in a single region, and AWS pricing changes. Finally, the
+traditional baseline is a representative small deployment rather than a
+quotation: a bank with an existing data centre and depreciated hardware would
+report a lower marginal cost than the model assumes, although its \emph{marginal}
+cost for an incremental marketing campaign would still be dominated by the extra
+capacity the campaign requires. The economic case for elasticity rests on that
+marginal decision, which is why the burst multiplier was kept in the model rather
+than being averaged away.

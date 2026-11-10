@@ -1,0 +1,5 @@
+{
+  "TopicArn": "arn:aws:sns:us-east-1:123456789012:vericloud-kyc-topic",
+  "Subject": "[VeriCloud] Application 3f2b7c1e: PASS",
+  "Message": "{\"application_id\": \"3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b\", \"review_status\": \"PASS\", \"reason\": \"auto_approved\", \"processed_at\": \"2026-11-20T08:30:41Z\"}"
+}

@@ -1,0 +1,32 @@
+% =====================================================================
+%  tab_f_tco.tex -- archived fragment of the TCO comparison table (F6)
+%
+%  NOTE: the same table is written inline in
+%        report/sections/sec5b_cost.tex (Table "tab:tco"), which is the
+%        version that compiles in the Overleaf project. This file is the
+%        standalone copy kept so the numbers can be reused in the slides
+%        and cross-checked against results/tco_estimate.csv.
+%
+%  Usage (if you prefer \input over inline):
+%      \begin{table}[htbp]
+%        \centering\small
+%        \caption{Monthly cost by dimension at 10{,}000 applications per month (USD).}
+%        \label{tab:tco}
+%        \input{tables/tab_f_tco}
+%      \end{table}
+% =====================================================================
+\begin{tabular}{@{}lrr@{}}
+  \toprule
+  Cost dimension & Traditional & Serverless \\
+  \midrule
+  Compute                     & 140.16 &  0.63 \\
+  Storage                     &  16.00 &  1.03 \\
+  Database                    &  61.14 &  0.03 \\
+  Messaging and orchestration &  15.18 &  3.11 \\
+  AI inference                &     -- & 10.00 \\
+  Monitoring                  &     -- &  1.00 \\
+  \midrule
+  \textbf{Total}              & \textbf{232.48} & \textbf{15.80} \\
+  \textbf{Saving}             & \multicolumn{2}{c}{\textbf{216.69 per month (93.2\%)}} \\
+  \bottomrule
+\end{tabular}

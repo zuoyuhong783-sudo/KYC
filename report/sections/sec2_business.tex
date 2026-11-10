@@ -4,4 +4,107 @@
 % =====================================================================
 \section{Business Problem Framing and Requirements Analysis}\label{sec:business}
 
-% TODO(F): write this part.
+\subsection{Industry Background and Traditional Pain Points}\label{sec:business:background}
+
+Customer onboarding is the first operational contact a bank has with a new
+customer, and it is also the point at which regulatory risk and commercial
+pressure collide. Under anti-money-laundering rules a bank must verify that an
+applicant is who they claim to be before an account is opened: the identity
+document has to be genuine and unexpired, and the person submitting it has to be
+the person depicted on it. In a branch this is a manual task; in digital
+onboarding it must be automated at scale, and the volume is strongly \emph{bursty}
+because acquisition is driven by promotional campaigns rather than by a stable
+daily arrival rate.
+
+Traditional on-premises provisioning handles this burstiness badly, for three
+reasons.
+
+\begin{itemize}
+  \item \textbf{Idle capacity versus over-provisioning.} Normal operating load
+        typically consumes a small fraction of the provisioned server capacity,
+        so most of the hardware is idle for most of the year. Provisioning
+        additionally for the peak of a marketing campaign means paying for
+        capital equipment that is used for a few days at a time.
+  \item \textbf{Latency blow-ups at the peak.} When a campaign lands, a fixed
+        infrastructure saturates: verification jobs queue behind each other, the
+        queueing delay dominates the end-to-end time, and applicants abandon the
+        flow. Industry data cited in the project proposal puts application
+        abandonment at roughly 10\% when onboarding latency grows.
+  \item \textbf{CapEx and operational drag.} Servers, storage, licences and the
+        staff who maintain them are committed before a single application
+        arrives. Every capacity decision is a multi-month procurement decision,
+        which is the opposite of what a two-week campaign requires.
+\end{itemize}
+
+These are not tuning problems; they follow from the shape of the workload. A
+verification pipeline is idle most of the time and extremely busy for short
+intervals, which is precisely the profile that fixed-capacity infrastructure
+prices worst.
+
+\subsection{Cloud Adoption Motivation and Economic Value}\label{sec:business:cloud}
+
+Cloud computing addresses the capacity-versus-cost conflict through two of the
+essential characteristics defined by NIST~\cite{mell2011nist}, both of which this
+project relies on directly:
+
+\begin{itemize}
+  \item \textbf{Rapid elasticity.} Compute is allocated per request rather than
+        pre-purchased. When a burst of applicants arrives, an equal number of
+        serverless execution environments are created in parallel and released
+        as soon as each verification finishes, so the queue does not accumulate
+        and the peak does not have to be provisioned for in advance.
+  \item \textbf{Measured service (CapEx to OpEx).} Billing follows actual
+        invocation count, execution duration and bytes stored. In the idle
+        periods between campaigns the compute charge is zero, which converts a
+        fixed capital commitment into a variable operating expense that tracks
+        revenue.
+\end{itemize}
+
+The architectural consequence is that the unit of deployment stops being a
+server and becomes an event. VeriCloud is therefore designed as an event-driven,
+serverless pipeline in which every stage scales independently, following the
+serverless application guidance of the AWS Well-Architected
+Framework~\cite{aws2022serverlesslens}. The economic consequence is quantified in
+Section~\ref{sec:cost}.
+
+\subsection{KYC Compliance and Verification Rules}\label{sec:business:rules}
+
+Automation is only acceptable if it remains auditable. The pipeline therefore
+enforces a small set of quantitative rules, evaluated in a fixed order, so that
+every application receives exactly one reproducible verdict. Table~\ref{tab:rules}
+states them.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{KYC decision rules, evaluated in order (first match wins).}
+  \label{tab:rules}
+  \begin{tabular}{@{}clll@{}}
+    \toprule
+    \# & Condition & Verdict & Reason code \\
+    \midrule
+    1 & OCR could not extract the required fields & \texttt{FAIL} & \texttt{ocr\_failed} \\
+    2 & Document expired (\texttt{id\_valid = false}) & \texttt{FAIL} & \texttt{id\_expired} \\
+    3 & Face comparison raised an error & \texttt{NEEDS\_HUMAN\_REVIEW} & \texttt{face\_error} \\
+    4 & Similarity below the 80\% threshold & \texttt{NEEDS\_HUMAN\_REVIEW} & \texttt{similarity\_below\_80} \\
+    5 & None of the above & \texttt{PASS} & \texttt{auto\_approved} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Three design choices in Table~\ref{tab:rules} deserve comment. First, the rules
+are \emph{ordered}: a missing extraction must never fall through to an approval,
+and an expired document fails regardless of how well the faces match. Second, the
+80\% similarity threshold is the only tunable in the automated path; it
+is deliberately conservative, because the cost of a false acceptance in KYC is
+far higher than the cost of a manual review. Third, anything that cannot be
+decided automatically is routed to \texttt{NEEDS\_HUMAN\_REVIEW} rather than
+being rejected, and the successfully extracted document fields are retained so
+that the compliance officer does not have to re-key them. The system degrades to
+a human, not to an error.
+
+Files that are corrupt, empty or of an unsupported format are handled even
+earlier: they fail validation before the workflow starts, are retried three
+times, and are then quarantined in a dead-letter queue for 14 days. Such
+applications never reach the decision table and never create a record, which
+keeps the audit table free of unverifiable submissions.
