@@ -1,23 +1,23 @@
 scheme,item,unit,unit_price,monthly_qty,monthly_cost_usd,note
-serverless,Lambda — OCR 计算,GB-s,1.66667e-05,30000,0.5,"10,000次 × 1GB × 3s"
-serverless,Lambda — Face 计算,GB-s,1.66667e-05,7500,0.125,"10,000次 × 0.5GB × 1.5s"
-serverless,Lambda — 请求费,次,2e-07,20000,0.004,"2个函数 × 10,000次"
-serverless,S3 — 标准存储,GB-月,0.023,40,0.92,"20,000张 × 2MB = 40GB"
-serverless,S3 — PUT 请求,次,5e-06,20000,0.1,上传2万张
-serverless,S3 — GET 请求,次,4e-07,20000,0.008,两函数各读1次
-serverless,DynamoDB — 写入 (按需),WRU,1.25e-06,20000,0.025,"10,000写 × 2 WRU"
-serverless,DynamoDB — 读取 (按需),RRU,2.5e-07,20000,0.005,查询结果
-serverless,Step Functions — 状态转换,转换,2.5e-05,116000,2.9,"10,000次 × 12步 - 4,000免费额度 | 已核对 $2.90"
-serverless,Rekognition — CompareFaces,张,0.001,10000,10.0,每申请比对1张 | 已核对 $10.00
-serverless,SQS — 请求,请求,4e-07,20000,0.008,入队出队
-serverless,SNS — 邮件通知,封,2e-05,10000,0.2,每申请1封
-serverless,CloudWatch — 面板/告警,月,1,1,1.0,简化估计
+serverless,Lambda — OCR compute,GB-s,1.66667e-05,30000,0.5,"10,000 calls x 1GB x 3s"
+serverless,Lambda — Face compute,GB-s,1.66667e-05,7500,0.125,"10,000 calls x 0.5GB x 1.5s"
+serverless,Lambda — requests,requests,2e-07,20000,0.004,"2 functions x 10,000 calls"
+serverless,S3 — standard storage,GB-month,0.023,40,0.92,"20,000 images x 2MB = 40GB"
+serverless,S3 — PUT requests,requests,5e-06,20000,0.1,"Upload 20,000 images"
+serverless,S3 — GET requests,requests,4e-07,20000,0.008,1 read per function
+serverless,DynamoDB — writes (on-demand),WRU,1.25e-06,20000,0.025,"10,000 writes x 2 WRU"
+serverless,DynamoDB — reads (on-demand),RRU,2.5e-07,20000,0.005,Result queries
+serverless,Step Functions — state transitions,transitions,2.5e-05,116000,2.9,"10,000 x 12 steps - 4,000 free tier | VERIFIED $2.90"
+serverless,Rekognition — CompareFaces,images,0.001,10000,10.0,1 comparison per application | VERIFIED $10.00
+serverless,SQS — requests,requests,4e-07,20000,0.008,Enqueue + dequeue
+serverless,SNS — email notifications,notifications,2e-05,10000,0.2,1 email per application
+serverless,CloudWatch — dashboards/alarms,month,1,1,1.0,Simplified estimate
 serverless,TOTAL,,,,15.8,
-traditional,EC2 — 2× m5.large (24/7 常开，按10×峰值预留),小时,0.096,1460,140.16,2台 × 730小时 | 已核对 $0.096/hr
-traditional,RDS 实例 — db.t3.medium (单可用区),小时,0.068,730,49.64,24/7 常开 | 已核对 $0.068/hr
-traditional,RDS 存储 — 100GB,月,11.5,1,11.5,已核对 $11.50/月
-traditional,EBS — gp3 存储卷,GB-月,0.08,200,16.0,系统盘+数据
-traditional,自建消息队列 — 1× t3.small,小时,0.0208,730,15.184,替代SQS的自建broker
+traditional,"EC2 — 2x m5.large (24/7, sized for 10x peak)",hours,0.096,1460,140.16,2 instances x 730 hours | VERIFIED $0.096/hr
+traditional,RDS instance — db.t3.medium (Single-AZ),hours,0.068,730,49.64,24/7 | VERIFIED $0.068/hr
+traditional,RDS storage — 100GB,month,11.5,1,11.5,VERIFIED $11.50/month
+traditional,EBS — gp3 volume,GB-month,0.08,200,16.0,OS + data
+traditional,Self-hosted message broker — 1x t3.small,hours,0.0208,730,15.184,Replaces SQS
 traditional,TOTAL,,,,232.48,
 result,savings_usd,,,,216.69,
 result,savings_pct,,,,93.2,
