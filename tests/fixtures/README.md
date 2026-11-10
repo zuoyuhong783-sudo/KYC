@@ -43,6 +43,9 @@ tests/fixtures/
 ```bash
 # 至少 2 个不同的人的照片（different_person 组需要两张不同的脸）
 python tests/gen_fixtures.py --selfie-dir ~/photos --out tests/fixtures
+
+# 当前仓库里用的底图：samples/faces/（7 张 AI 合成成人脸，非真人，见 samples/README.md）
+python tests/gen_fixtures.py --selfie-dir samples/faces --out tests/fixtures
 ```
 
 1. 卡面 1012×638 px（85.6×54 mm @300 dpi），四字段清晰：姓名 / 证件号 / 有效期 / 发证机关；

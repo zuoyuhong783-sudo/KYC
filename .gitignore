@@ -69,3 +69,8 @@ tests/fixtures/**/*.png
 # --- 运行输出 ---
 # results/*.csv 是报告数字的溯源证据，必须进仓库（§9.2 数字关），不要忽略
 screenshots/
+
+# --- 合成人脸底图（E 生成素材用，可再生，不入库；README 保留）---
+samples/faces/
+samples/**/*.jpg
+samples/**/*.png
