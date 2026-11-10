@@ -6,12 +6,12 @@
 #   bash setup_s3_event.sh --verify   # set up, then upload a test selfie and check the queue
 #
 # Safe to run again: existing bucket / queues are reused, settings are re-applied.
-# Bucket name can be overridden while the real name is still taken elsewhere:
-#   BUCKET=vericloud-raw-1009-a bash setup_s3_event.sh
+# Bucket name (interface v1.3.1) can be overridden for a personal test account:
+#   BUCKET=vericloud-raw-1009-yourname bash setup_s3_event.sh
 set -euo pipefail
 
 REGION="us-east-1"
-BUCKET="${BUCKET:-vericloud-raw-1009}"
+BUCKET="${BUCKET:-vericloud-raw-1009-a}"
 QUEUE="vericloud-ingest-queue"
 DLQ="vericloud-ingest-dlq"
 PREFIX="raw/selfie/"
@@ -24,7 +24,8 @@ case "$CALLER_ARN" in
   *)
     echo "!! 当前身份不是你的 Learner Lab 账号：$CALLER_ARN"
     echo "   1) 确认 Lab 左上角是绿点（Start Lab）"
-    echo "   2) AWS Details -> AWS CLI: Show，把 [default] 那几行粘进 ~/.aws/credentials"
+    echo "   2) AWS Details -> AWS CLI: Show，复制 [default] 那几行；cat > ~/lab_creds 回车，粘贴，回车，Ctrl+D"
+    echo "      然后 export AWS_SHARED_CREDENTIALS_FILE=~/lab_creds（每开一个新终端都要再 export）"
     echo "   3) aws sts get-caller-identity 的 Arn 里出现 voclabs 后再运行本脚本"
     echo "   (Set ALLOW_ANY_IDENTITY=1 to skip this check outside Learner Lab.)"
     [ "${ALLOW_ANY_IDENTITY:-}" = "1" ] || exit 1
@@ -70,7 +71,7 @@ else
   echo "[2/5] Creating bucket $BUCKET"
   if ! aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" >/dev/null; then
     echo "!! Could not create $BUCKET. If the name is taken by a teammate's account, ask them to delete it,"
-    echo "   or rerun with a temporary name: BUCKET=${BUCKET}-a bash $0"
+    echo "   or rerun with another name: BUCKET=${BUCKET}-yourname bash $0"
     exit 1
   fi
 fi

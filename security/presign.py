@@ -1,7 +1,8 @@
 """C2 — Issue two short-lived presigned PUT URLs for one KYC application.
 
 Contract: docs/interface.md sections 1 and 3.
-  - bucket:  vericloud-raw-1009 (us-east-1, Learner Lab region lock)
+  - bucket:  vericloud-raw-1009-a (interface v1.3.1; us-east-1, Learner Lab region lock)
+             override with --bucket or env VERICLOUD_BUCKET
   - paths:   raw/id-card/<application_id><ext> and raw/selfie/<application_id><ext>
   - expiry:  300 seconds (5 minutes)
   - formats: .jpg / .jpeg / .png
@@ -10,7 +11,10 @@ The URLs are signed with SigV4 and carry the signer's session token, so they
 stop working both when they expire and when the signing credentials do.
 
 Usage:
-    python presign.py <application_id> [--profile lab] [--ext .jpg] [--expires 300]
+    python presign.py <application_id> [--bucket NAME] [--profile lab] [--ext .jpg] [--expires 300]
+
+Credentials: profile 'lab' if it exists, otherwise the default chain
+(e.g. [default] in AWS_SHARED_CREDENTIALS_FILE inside the Learner Lab terminal).
 
 Output is JSON on stdout:
     {"application_id": ..., "bucket": ..., "expires_in": 300,
@@ -22,20 +26,21 @@ No Content-Type header is signed, so any HTTP client works unchanged.
 
 import argparse
 import json
+import os
 import sys
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError, ProfileNotFound
 
-BUCKET = "vericloud-raw-1009"
+BUCKET = os.environ.get("VERICLOUD_BUCKET", "vericloud-raw-1009-a")
 REGION = "us-east-1"
 EXPIRES_IN = 300  # seconds, per interface.md section 3
 ALLOWED_EXT = (".jpg", ".jpeg", ".png")
 
 
 def generate_upload_urls(application_id, ext=".jpg", *, bucket=BUCKET,
-                         profile="lab", expires_in=EXPIRES_IN):
+                         profile=None, expires_in=EXPIRES_IN):
     """Return a dict with the two presigned PUT URLs for this application_id.
 
     Raises ValueError on bad input, so callers (and tests) can validate
@@ -48,6 +53,10 @@ def generate_upload_urls(application_id, ext=".jpg", *, bucket=BUCKET,
     if ext.lower() not in ALLOWED_EXT:
         raise ValueError(f"extension {ext!r} not allowed, use one of {ALLOWED_EXT}")
 
+    if profile is None:
+        # Use the 'lab' profile when it exists (C's laptop); otherwise the default
+        # credential chain (Learner Lab terminal with only a [default] section).
+        profile = "lab" if "lab" in boto3.Session().available_profiles else None
     session = boto3.Session(profile_name=profile, region_name=REGION)
     s3 = session.client("s3", config=Config(signature_version="s3v4"))
 
@@ -70,7 +79,9 @@ def generate_upload_urls(application_id, ext=".jpg", *, bucket=BUCKET,
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("application_id", help="e.g. 3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b")
-    parser.add_argument("--profile", default="lab", help="AWS CLI profile (default: lab)")
+    parser.add_argument("--bucket", default=BUCKET, help=f"S3 bucket (default: {BUCKET})")
+    parser.add_argument("--profile", default=None,
+                        help="AWS CLI profile (default: 'lab' if present, else default credentials)")
     parser.add_argument("--ext", default=".jpg", help="image extension (default: .jpg)")
     parser.add_argument("--expires", type=int, default=EXPIRES_IN,
                         help="URL lifetime in seconds (default 300 per interface.md; "
@@ -79,7 +90,7 @@ def main() -> int:
 
     try:
         result = generate_upload_urls(
-            args.application_id, args.ext,
+            args.application_id, args.ext, bucket=args.bucket,
             profile=args.profile, expires_in=args.expires,
         )
     except ValueError as e:

@@ -1,8 +1,8 @@
-# VeriCloud 接口约定 v1.3（Interface Contract）
+# VeriCloud 接口约定 v1.3.1（Interface Contract）
 
 | 项目 | 内容 |
 |---|---|
-| 版本 | v1.3 · 2026-11-10 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
+| 版本 | v1.3.1 · 2026-11-10 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
 | 状态 | 待全员确认（确认方式：见文末“确认签名”，B/C/D/F 必须确认，E 建议确认） |
 | 生效规则 | 本文件是全组**唯一**的接口事实来源。所有代码、配置、报告里的资源名、S3 路径、JSON 字段、DynamoDB 字段必须与本文件完全一致。要改名或加字段：先在群里提，A 更新本文件并升版本号（v1.1…）后才生效。 |
 | 来源 | 《01_VeriCloud_六人分工与时间线执行方案》第一节、第十二节 |
@@ -30,7 +30,7 @@
 ## 2. 系统数据流
 
 ```text
-用户 ──(预签名URL, 5分钟有效)──▶ S3 vericloud-raw-1009
+用户 ──(预签名URL, 5分钟有效)──▶ S3 vericloud-raw-1009-a
                                    │  raw/id-card/<application_id>.jpg
                                    │  raw/selfie/<application_id>.jpg   ← 自拍上传 = 触发信号
                                    ▼
@@ -66,7 +66,7 @@
 
 | 资源 | 名称 | 负责人 |
 |---|---|---|
-| S3 桶 | `vericloud-raw-1009`（v1.1 确认；桶名全球唯一，各人自己账号里测试时如被占用，可临时加个人后缀，演示账号必须用此名） | C |
+| S3 桶 | `vericloud-raw-1009-a`（v1.3.1 起的正式名；原名 `vericloud-raw-1009` 留在 C 的个人账号放人脸测试素材。桶名全球唯一，各人自己账号里测试时可加个人后缀，演示账号用此名） | C |
 | S3 路径（证件） | `raw/id-card/<application_id>.jpg`（或 `.png`） | C |
 | S3 路径（自拍） | `raw/selfie/<application_id>.jpg`（或 `.png`） | C |
 | SQS 入口队列 | `vericloud-ingest-queue` | D |
@@ -127,7 +127,7 @@
 ```json
 {
   "application_id": "3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b",
-  "bucket": "vericloud-raw-1009",
+  "bucket": "vericloud-raw-1009-a",
   "id_card_key": "raw/id-card/3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b.jpg",
   "selfie_key": "raw/selfie/3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b.jpg",
   "created_at": "2026-11-20T08:30:00Z",
@@ -186,7 +186,7 @@
 ```json
 {
   "application_id": "3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b",
-  "bucket": "vericloud-raw-1009",
+  "bucket": "vericloud-raw-1009-a",
   "id_card_key": "raw/id-card/3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b.jpg",
   "selfie_key": "raw/selfie/3f2b7c1e-8a4d-4f2e-9b1a-1c2d3e4f5a6b.jpg",
   "created_at": "2026-11-20T08:30:00Z",
@@ -269,7 +269,7 @@ class OcrExtractionError(Exception):
 
 | 资源 | ARN / 名称 | 填写人 | 日期 |
 |---|---|---|---|
-| S3 桶名后缀 | `vericloud-raw-1009`（组长学号 5561009 后 4 位） | A 确认 | 2026-11-06 |
+| S3 桶名 | `vericloud-raw-1009-a`（`1009` 为组长学号 5561009 后 4 位；v1.3.1 加 `-a`） | A 确认 | 2026-11-10 |
 | SQS 入口队列 URL |`https://sqs.us-east-1.amazonaws.com/493114794251/vericloud-ingest-queue`| D | 2026-11-08 |
 | SQS DLQ ARN | `arn:aws:sqs:us-east-1:493114794251:vericloud-ingest-dlq`| D | 2026-11-08 |
 | `vericloud-starter` ARN |`arn:aws:lambda:us-east-1:493114794251:function:vericloud-starter` | D | 2026-11-08 |
@@ -287,7 +287,7 @@ class OcrExtractionError(Exception):
 
 | 资源 | ARN / 名称 | 填写人 | 日期 |
 |---|---|---|---|
-| S3 桶 | `vericloud-raw-1009-a`（**临时名**：`vericloud-raw-1009` 仍被 C 的个人账号占用，C 删除后改回正式名） | A | 2026-11-09 |
+| S3 桶 | `vericloud-raw-1009-a`（正式名，v1.3.1） | A | 2026-11-10 |
 | S3 事件通知 | `raw/selfie/` 前缀 `ObjectCreated:*` → `vericloud-ingest-queue`（A5 已验证：上传后队列收到消息） | A | 2026-11-09 |
 | SQS 入口队列 URL | `https://sqs.us-east-1.amazonaws.com/153547984638/vericloud-ingest-queue` | A | 2026-11-09 |
 | SQS DLQ ARN | `arn:aws:sqs:us-east-1:153547984638:vericloud-ingest-dlq` | A | 2026-11-09 |
@@ -318,6 +318,7 @@ class OcrExtractionError(Exception):
 | v1.1 | 2026-11-06 | A | S3 桶名后缀定为 `1009`（桶名 `vericloud-raw-1009`）；注明 Learner Lab 只允许 `us-east-1`（悉尼等其他区建资源会被拒绝） |
 | v1.2 | 2026-11-08 | A | 5.3：有效期「长期」统一输出 `expiry_date = "9999-12-31"`、`id_valid = true`，不再抛 `OcrExtractionError`（应 B 提问确认） |
 | v1.3 | 2026-11-10 | A | 采纳 E 的变更申请（评审见 `docs/review_A_on_E_proposal_v1.3.md`）：§1 时间格式兼容 `Z`/`+00:00`/小数秒；§4、§5.1 加 `received_at`；§5.2 预检改为完整解码 `load()`；§5.3 `issuing_authority` 不得含 8 位以上连续数字；§9 加 `expired`/`missing_field` 两类与 `expected_reason` 列，图片不进 git。D 的 starter 与 E 的脚本已按此实现；B 的 §5.3 和 D 状态机写入 `received_at` 在 A6 联调时完成 |
+| v1.3.1 | 2026-11-10 | A | §3 正式桶名改为 `vericloud-raw-1009-a`（原名留在 C 的个人账号作人脸测试素材，不再要求删除）；同步 §2、§5.1、§5.5、§8 的桶名。各模块代码从 S3 事件或命令行参数读桶名，不用改；只有 C 的 `security/presign.py` 写死了默认桶名，已由 A 代改 |
 
 ---
 
