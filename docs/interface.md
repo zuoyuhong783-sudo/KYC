@@ -267,11 +267,11 @@ class OcrExtractionError(Exception):
 | `vericloud-starter` ARN |`arn:aws:lambda:us-east-1:493114794251:function:vericloud-starter` | D | 2026-11-08 |
 | `vericloud-ocr` ARN | `arn:aws:lambda:us-east-1:494345913252:function:vericloud-ocr`（**个人 Lab ARN**，统一演示账号部署后更新） | B | 2026-11-08 |
 | `vericloud-face` ARN | `arn:aws:lambda:us-east-1:350325240468:function:vericloud-face` | C | 2026-11-06 |
-| `vericloud-notify` ARN | | F | |
+| `vericloud-notify` ARN | `arn:aws:lambda:us-east-1:099702382348:function:vericloud-notify` | F | 2026-11-10 |
 | `vericloud-kyc-workflow` ARN | `arn:aws:states:us-east-1:493114794251:stateMachine:vericloud-kyc-workflow`| D | 2026-11-08 |
-| `vericloud-kyc-table` Stream ARN | | F | |
-| `vericloud-kyc-topic` ARN | | F | |
-| `vericloud-ops-alarm` ARN | | F | |
+| `vericloud-kyc-table` Stream ARN | `arn:aws:dynamodb:us-east-1:099702382348:table/vericloud-kyc-table/stream/2026-11-10T08:44:28.506` | F | 2026-11-10 |
+| `vericloud-kyc-topic` ARN | `arn:aws:sns:us-east-1:099702382348:vericloud-kyc-topic` | F | 2026-11-10 |
+| `vericloud-ops-alarm` ARN | `arn:aws:sns:us-east-1:099702382348:vericloud-ops-alarm` | F | 2026-11-10 |
 
 ### 8.1 统一演示账号（A 的 Learner Lab，账号 `153547984638`）
 
@@ -321,4 +321,4 @@ class OcrExtractionError(Exception):
 | C | 胡同学 | 3（S3）、5.4、7 | ☑ |
 | D | 苏昶玮 | 3（SQS/状态机）、5.1、5.2、5.5、6、7 | ☑ |
 | E | Li Hengchen | 2（上传顺序）、9 | ☐ |
-| F | 杨雪俪 | 4、5.6 | ☐ |
+| F | 杨雪俪 | 4、5.6 | ☑ |
