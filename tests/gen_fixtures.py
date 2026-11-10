@@ -285,7 +285,7 @@ def generate(args) -> None:
     #   zero_byte_XX          0 字节
     #   wrong_format_01..02   文本改名 .jpg
     #   wrong_format_03       JPEG 截断 600 B（PIL 打不开）
-    #   wrong_format_04       JPEG 截断 2000 B（PIL 能打开，需 §5.2 补完整性判定）
+    #   wrong_format_04       JPEG 截断 2000 B（verify() 会放过，v1.3 §5.2 完整解码 load() 能拦下）
     if (id_dir / "normal_01.jpg").exists():
         good = Image.open(id_dir / "normal_01.jpg")
     else:

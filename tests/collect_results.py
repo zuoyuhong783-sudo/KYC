@@ -47,15 +47,15 @@ CORRUPT_CATEGORIES = {"zero_byte", "wrong_format"}
 
 
 def parse_iso(ts: str) -> datetime | None:
+    # Accept any ISO 8601 UTC form: "...Z", "...000Z", "...+00:00", with or without
+    # fractional seconds (starter writes received_at via datetime.isoformat()).
     if not ts:
         return None
-    for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S%z"):
-        try:
-            dt = datetime.strptime(ts, fmt)
-            return dt.replace(tzinfo=dt.tzinfo or timezone.utc)
-        except ValueError:
-            continue
-    return None
+    try:
+        dt = datetime.fromisoformat(ts.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def percentile(values: list[float], q: float, label: str) -> float:
