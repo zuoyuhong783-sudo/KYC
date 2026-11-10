@@ -7,16 +7,17 @@ serverless,S3 — PUT 请求,次,5e-06,20000,0.1,上传2万张
 serverless,S3 — GET 请求,次,4e-07,20000,0.008,两函数各读1次
 serverless,DynamoDB — 写入 (按需),WRU,1.25e-06,20000,0.025,"10,000写 × 2 WRU"
 serverless,DynamoDB — 读取 (按需),RRU,2.5e-07,20000,0.005,查询结果
-serverless,Step Functions — 状态转换,转换,2.5e-05,120000,3.0,"10,000次 × 12步"
-serverless,Rekognition — CompareFaces,张,0.001,10000,10.0,每申请比对1张
+serverless,Step Functions — 状态转换,转换,2.5e-05,116000,2.9,"10,000次 × 12步 - 4,000免费额度 | 已核对 $2.90"
+serverless,Rekognition — CompareFaces,张,0.001,10000,10.0,每申请比对1张 | 已核对 $10.00
 serverless,SQS — 请求,请求,4e-07,20000,0.008,入队出队
 serverless,SNS — 邮件通知,封,2e-05,10000,0.2,每申请1封
 serverless,CloudWatch — 面板/告警,月,1,1,1.0,简化估计
-serverless,TOTAL,,,,15.9,
-traditional,EC2 — 2× m5.large (24/7 常开，按10×峰值预留),小时,0.096,1460,140.16,2台 × 730小时
-traditional,RDS — db.t3.medium (常驻数据库),小时,0.041,730,29.93,24/7 常开
+serverless,TOTAL,,,,15.8,
+traditional,EC2 — 2× m5.large (24/7 常开，按10×峰值预留),小时,0.096,1460,140.16,2台 × 730小时 | 已核对 $0.096/hr
+traditional,RDS 实例 — db.t3.medium (单可用区),小时,0.068,730,49.64,24/7 常开 | 已核对 $0.068/hr
+traditional,RDS 存储 — 100GB,月,11.5,1,11.5,已核对 $11.50/月
 traditional,EBS — gp3 存储卷,GB-月,0.08,200,16.0,系统盘+数据
 traditional,自建消息队列 — 1× t3.small,小时,0.0208,730,15.184,替代SQS的自建broker
-traditional,TOTAL,,,,201.27,
-result,savings_usd,,,,185.38,
-result,savings_pct,,,,92.1,
+traditional,TOTAL,,,,232.48,
+result,savings_usd,,,,216.69,
+result,savings_pct,,,,93.2,
