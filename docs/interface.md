@@ -309,7 +309,13 @@ class OcrExtractionError(Exception):
 | SQS DLQ ARN | `arn:aws:sqs:us-east-1:153547984638:vericloud-ingest-dlq` | A | 2026-11-09 |
 | `vericloud-kyc-table` | 按需计费；Stream `NEW_AND_OLD_IMAGES`：`arn:aws:dynamodb:us-east-1:153547984638:table/vericloud-kyc-table/stream/2026-11-13T11:37:21.663` | A | 2026-11-13 |
 | `vericloud-api`（§5.7） | Lambda + API Gateway HTTP API `vericloud-api`；S3 CORS 已开。接口地址只在组内传，不写进仓库 | A | 2026-11-13 |
-| `vericloud-starter` / `-ocr` / `-face` / `-notify`、状态机、SNS | 待 A6 部署 | | |
+| `vericloud-starter` | `arn:aws:lambda:us-east-1:153547984638:function:vericloud-starter`（SQS 触发，batch 1；含 Pillow） | A | 2026-11-13 |
+| `vericloud-ocr` | `arn:aws:lambda:us-east-1:153547984638:function:vericloud-ocr`（容器镜像，取自 B 的 ECR `494345913252/vericloud-ocr@sha256:564a132b…842a35`，1536 MB / 60 s） | A、B | 2026-11-13 |
+| `vericloud-face` | `arn:aws:lambda:us-east-1:153547984638:function:vericloud-face` | A | 2026-11-13 |
+| `vericloud-notify` | `arn:aws:lambda:us-east-1:153547984638:function:vericloud-notify`（DynamoDB Stream 触发，batch 1） | A | 2026-11-13 |
+| `vericloud-kyc-workflow` | `arn:aws:states:us-east-1:153547984638:stateMachine:vericloud-kyc-workflow`（正式版 ASL） | A | 2026-11-13 |
+| `vericloud-kyc-topic` | `arn:aws:sns:us-east-1:153547984638:vericloud-kyc-topic`（演示邮箱已订阅） | A | 2026-11-13 |
+| 部署方式 | `infrastructure/deploy_all.sh`（一次部署以上全部，可重复运行） | A | 2026-11-13 |
 
 **注意**：这里只填 ARN 和名称，**不要**填 Access Key、Secret Key、Session Token 或任何密码。
 
