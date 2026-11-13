@@ -304,7 +304,9 @@ class OcrExtractionError(Exception):
 | S3 事件通知 | `raw/selfie/` 前缀 `ObjectCreated:*` → `vericloud-ingest-queue`（A5 已验证：上传后队列收到消息） | A | 2026-11-09 |
 | SQS 入口队列 URL | `https://sqs.us-east-1.amazonaws.com/153547984638/vericloud-ingest-queue` | A | 2026-11-09 |
 | SQS DLQ ARN | `arn:aws:sqs:us-east-1:153547984638:vericloud-ingest-dlq` | A | 2026-11-09 |
-| `vericloud-starter` / `-ocr` / `-face` / `-notify`、状态机、DynamoDB、SNS | 待 A6 部署 | | |
+| `vericloud-kyc-table` | 按需计费；Stream `NEW_AND_OLD_IMAGES`：`arn:aws:dynamodb:us-east-1:153547984638:table/vericloud-kyc-table/stream/2026-11-13T11:37:21.663` | A | 2026-11-13 |
+| `vericloud-api`（§5.7） | Lambda + API Gateway HTTP API `vericloud-api`；S3 CORS 已开。接口地址只在组内传，不写进仓库 | A | 2026-11-13 |
+| `vericloud-starter` / `-ocr` / `-face` / `-notify`、状态机、SNS | 待 A6 部署 | | |
 
 **注意**：这里只填 ARN 和名称，**不要**填 Access Key、Secret Key、Session Token 或任何密码。
 
