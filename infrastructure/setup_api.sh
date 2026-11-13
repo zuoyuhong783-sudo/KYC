@@ -54,20 +54,20 @@ else
 fi
 FN_ARN="arn:aws:lambda:$REGION:$ACCOUNT_ID:function:$FN"
 
-# ---------- 2. Public HTTPS endpoint: API Gateway HTTP API with CORS ----------
+# ---------- 2. Public HTTPS endpoint: API Gateway HTTP API ----------
 # (Lambda function URLs would be simpler, but the Learner Lab CLI is too old to create them.)
-cat > "$TMP/cors.json" <<'JSON'
-{"AllowOrigins":["*"],"AllowMethods":["GET","POST"],"AllowHeaders":["content-type"],"MaxAge":300}
-JSON
+# CORS is answered by the Lambda, NOT by the API: the API's own CORS drops the
+# Access-Control-Allow-Origin header for pages opened from disk (Origin: null),
+# and it strips the Lambda's headers while it is configured. So it is removed here.
 API_ID="$(aws apigatewayv2 get-apis --region "$REGION" --query "Items[?Name=='$FN'].ApiId | [0]" --output text)"
 if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
-  echo "[2/4] HTTP API $FN exists ($API_ID); re-applying CORS"
-  aws apigatewayv2 update-api --api-id "$API_ID" --region "$REGION" --cors-configuration "file://$TMP/cors.json" >/dev/null
+  echo "[2/4] HTTP API $FN exists ($API_ID)"
 else
   echo "[2/4] Creating HTTP API $FN"
   # Quick create: one $default route -> the Lambda, $default stage with auto-deploy, payload format 2.0.
-  API_ID="$(aws apigatewayv2 create-api --name "$FN" --region "$REGION" --protocol-type HTTP     --target "$FN_ARN" --cors-configuration "file://$TMP/cors.json" --query ApiId --output text)"
+  API_ID="$(aws apigatewayv2 create-api --name "$FN" --region "$REGION" --protocol-type HTTP     --target "$FN_ARN" --query ApiId --output text)"
 fi
+aws apigatewayv2 delete-cors-configuration --api-id "$API_ID" --region "$REGION" >/dev/null 2>&1 || true
 aws lambda add-permission --function-name "$FN" --region "$REGION" --statement-id apigw-invoke   --action lambda:InvokeFunction --principal apigateway.amazonaws.com   --source-arn "arn:aws:execute-api:$REGION:$ACCOUNT_ID:$API_ID/*" >/dev/null 2>&1 || true
 API_URL="$(aws apigatewayv2 get-api --api-id "$API_ID" --region "$REGION" --query ApiEndpoint --output text)"
 API_URL="${API_URL%/}"
@@ -87,6 +87,9 @@ else
 fi
 
 echo
+sleep 3
+echo "CORS check for a page opened from disk (expect: access-control-allow-origin: *):"
+curl -s -i -H "Origin: null" "$API_URL/dashboard" | grep -i "access-control-allow-origin" || echo "   !! missing - API Gateway CORS still on? Console: API Gateway -> $FN -> CORS -> Clear"
 echo "Quick check (expect 404 {\"status\": \"PENDING\"}):"
 curl -s "$API_URL/applications/00000000-0000-4000-8000-000000000000"; echo
 echo
