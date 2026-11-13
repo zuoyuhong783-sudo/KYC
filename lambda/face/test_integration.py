@@ -52,7 +52,9 @@ def test_normal_same_person_passes():
 def test_no_face_raises_contract_error():
     payload, err = invoke_lambda(
         "raw/id-card/noface-test.jpg", "raw/selfie/noface-test.jpg", "noface")
-    assert err == "Handled"  # raised, not crashed: a contract exception
+    # "Handled" or "Unhandled" both occur for raised custom exceptions
+    # depending on runtime; Step Functions matches errorType, not this header.
+    assert err in ("Handled", "Unhandled")
     assert payload["errorType"] == "FaceNotDetectedError"
 
 

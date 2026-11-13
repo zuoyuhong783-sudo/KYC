@@ -20,21 +20,22 @@
 | 9 | 其他服务错误（Throttling）→ FaceCompareError | 容错 | PASS |
 | 10 | 事件缺字段 → FaceCompareError（不裸抛 KeyError） | 容错 | PASS |
 
-## 2. 集成测试 `test_integration.py` — 对已部署函数跑三类真调用
-
-代码就绪，默认跳过（需有效 `[lab]` 凭证）。跑法：
+## 2. 集成测试 `test_integration.py` — 2026-11-13 复跑 3/3 通过
 
 ```bash
-VERICLOUD_INTEGRATION=1 uv run --with boto3 --with pytest pytest test_integration.py -v
+VERICLOUD_INTEGRATION=1 uv run --with boto3 --with pytest pytest test_handler.py test_integration.py -v
+# 13 passed (10 unit + 3 integration)
 ```
-
-已有结果（2026-11-06 部署当日人工三连调用，凭证过期后待复跑确认）：
 
 | 用例 | 桶内素材 | 结果 |
 |---|---|---|
-| normal | smoke-app.jpg ×2（同一真人图） | `{"similarity": 100.0, "face_matched": true}` |
-| no_face | noface-test.jpg ×2（纯色合法 JPEG） | errorType=`FaceNotDetectedError` |
-| different_person | diff-source（奥巴马）/ diff-target（布什） | `{"similarity": 0.78, "face_matched": false}` |
+| normal | smoke-app.jpg ×2（同一真人图） | `face_matched: true`, similarity 100.0 ≥ 80 ✅ |
+| no_face | noface-test.jpg ×2（纯色合法 JPEG） | errorType=`FaceNotDetectedError`（契约异常名精确） ✅ |
+| different_person | diff-source（奥巴马）/ diff-target（布什） | `face_matched: false`, similarity 0.78 < 80 ✅ |
+
+注：Python 运行时对自定义异常报 `FunctionError: Unhandled`（而非 Handled），
+但 errorType/errorMessage 与契约完全一致；Step Functions 的 Catch 按 errorType
+匹配，不受该 header 影响——测试断言已按此放宽（in {"Handled","Unhandled"}）。
 
 ## 3. 给 D / E 的说明
 
