@@ -242,7 +242,10 @@ OCR 失败时，`ocr` 变为：
 | `POST /applications` | `{"application_id", "id_card_extension", "selfie_extension"}`（小写 UUID v4；扩展名 `.jpg`/`.jpeg`/`.png`） | `200 {"application_id", "id_card_url", "selfie_url", "expires_in": 300}`；参数错 `400`；编号已用过 `409` |
 | `GET /applications/<application_id>` | — | 完成：`200 {"review_status", "reason", "processed_at"}`；处理中：`404 {"status": "PENDING"}` |
 
-只返回这三个字段，**不返回**姓名、证件号。前端先 PUT 证件照，再 PUT 自拍（第 2 节）。部署：`infrastructure/setup_api.sh`（API Gateway HTTP API + S3 CORS）。
+| `GET /applications/<application_id>/trace`（演示页实时进度） | — | `200 {"uploads", "execution", "steps", "result"}`：S3 里的两张图、Step Functions 执行状态和已走过的每个状态、表里的结果（姓名只留首字，证件号本来就是脱敏的） |
+| `GET /dashboard`（运维页） | — | `200 {"counts", "recent", "queues", "executions"}`：三类结果计数、最近记录（不含个人字段）、队列和 DLQ 深度、运行中的执行数 |
+
+`GET /applications/<id>` 只返回这三个字段，**不返回**姓名、证件号。前端先 PUT 证件照，再 PUT 自拍（第 2 节）。部署：`infrastructure/setup_api.sh`（API Gateway HTTP API + S3 CORS）。
 
 ---
 
@@ -334,7 +337,7 @@ class OcrExtractionError(Exception):
 | v1.2 | 2026-11-08 | A | 5.3：有效期「长期」统一输出 `expiry_date = "9999-12-31"`、`id_valid = true`，不再抛 `OcrExtractionError`（应 B 提问确认） |
 | v1.3 | 2026-11-10 | A | 采纳 E 的变更申请（评审见 `docs/review_A_on_E_proposal_v1.3.md`）：§1 时间格式兼容 `Z`/`+00:00`/小数秒；§4、§5.1 加 `received_at`；§5.2 预检改为完整解码 `load()`；§5.3 `issuing_authority` 不得含 8 位以上连续数字；§9 加 `expired`/`missing_field` 两类与 `expected_reason` 列，图片不进 git。D 的 starter 与 E 的脚本已按此实现；B 的 §5.3 和 D 状态机写入 `received_at` 在 A6 联调时完成 |
 | v1.3.1 | 2026-11-10 | A | §3 正式桶名改为 `vericloud-raw-1009-a`（原名留在 C 的个人账号作人脸测试素材，不再要求删除）；同步 §2、§5.1、§5.5、§8 的桶名。各模块代码从 S3 事件或命令行参数读桶名，不用改；只有 C 的 `security/presign.py` 写死了默认桶名，已由 A 代改 |
-| v1.4 | 2026-11-13 | A | 新增 §5.7 前端接口 `vericloud-api`（申请上传地址、查询结果），接入组内前端 `frontend/`；只新增，不改已有字段 |
+| v1.4 | 2026-11-13 | A | 新增 §5.7 前端接口 `vericloud-api`（申请上传地址、查询结果、实时进度 `trace`、运维 `dashboard`），接入组内前端 `frontend/dist` 和演示页 `frontend/live`；只新增，不改已有字段 |
 
 ---
 
