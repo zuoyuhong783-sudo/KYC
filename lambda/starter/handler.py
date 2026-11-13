@@ -39,7 +39,7 @@ def validate_s3_image(bucket: str, key: str):
     try:
         file_bytes = response['Body'].read()
         image = Image.open(io.BytesIO(file_bytes))
-        image.load()  # 改为 load() 进行深度解码校验
+        image.load()
     except Exception as e:
         raise PrecheckFailedError(f"Corrupted or invalid image file ({key}): {str(e)}")
 
@@ -91,9 +91,7 @@ def lambda_handler(event, context):
         if not bucket or not selfie_key:
             raise ValueError(f"Missing bucket or object key: {s3_info}")
 
-        # S3 文件创建时间与 Starter 接收处理时间
         created_at = record_0.get('eventTime')
-        received_at = datetime.now(timezone.utc).isoformat()
 
         # 从 selfie 路径解析 application_id (路径约定: raw/selfie/<id>.*)
         filename = os.path.basename(selfie_key)
@@ -106,7 +104,10 @@ def lambda_handler(event, context):
         validate_s3_image(bucket, selfie_key)
         validate_s3_image(bucket, id_card_key)
 
-        # 构造下游标准 Payload（包含 created_at 和 received_at 供压测端到端耗时分析）
+        # 在预检之后生成时间，并格式化为与 created_at 一致的毫秒级 Z 结尾格式
+        received_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+        # 构造下游标准 Payload
         payload = {
             "application_id": application_id,
             "bucket": bucket,
