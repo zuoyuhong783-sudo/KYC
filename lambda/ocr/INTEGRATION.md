@@ -12,7 +12,7 @@
 
 ## D 接入真实 OCR 时
 
-当前 `stepfunctions/stepfunctions/kyc_workflow.asl.json` 明确是 Mock：`Mock_OCR_Worker` 为 Pass，尚无真实 Lambda 调用。仓库整合不等于 AWS 部署完成。
+`stepfunctions/stepfunctions/kyc_workflow.asl.json` 已于 11-13 换成正式版（A 代 D 编写），会调用演示账号里的 `vericloud-ocr`；旧的 Mock 版保留为 `kyc_workflow.mock.asl.json`。仓库整合不等于 AWS 部署完成，以 A6 实际运行为准。
 
 1. B 在实际 Lab 完成容器部署与调用测试，提供 `vericloud-ocr` 的真实 ARN，填入接口文档第8节。
 2. D 将 Mock OCR 节点替换为 Lambda Task，原样传递五个输入字段；使用 `arn:aws:states:::lambda:invoke` 时，需要提取返回的 `Payload`，不能把带 SDK 元数据的外层对象当 OCR 结果。

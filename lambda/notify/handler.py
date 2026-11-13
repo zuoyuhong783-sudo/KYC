@@ -8,8 +8,13 @@ Behaviour
 * Trigger: ``vericloud-kyc-table`` DynamoDB Stream (``NEW_AND_OLD_IMAGES``).
 * Publish only when ``review_status`` is **created** (INSERT) or **changed**
   (MODIFY with a different status). A MODIFY that leaves the status untouched
-  is ignored, so a DynamoDB Streams at-least-once redelivery cannot duplicate
-  an email.
+  is ignored, so re-running the workflow for the same application (PutItem
+  overwrite, same status) does not send a second email.
+* Not exactly-once: Lambda processes DynamoDB Streams at least once. If the
+  invocation fails after ``publish`` succeeded, the same record is retried and
+  the email can be sent twice. Trigger batch size 1 (docs/aws_setup_F.md) keeps this to
+  that one record; a full fix would need a dedup marker (e.g. a conditional
+  write keyed by ``eventID``), which is out of scope for the demo.
 * The SNS payload contains exactly four fields and never the applicant's name
   or ID number — see ``_build_payload``.
 

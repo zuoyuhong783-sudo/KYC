@@ -1,1 +1,444 @@
-{"Comment":"VeriCloud Serverless KYC State Machine - Mock Version for Pipeline Testing","StartAt":"Parallel_KYC_Verification","States":{"Parallel_KYC_Verification":{"Type":"Parallel","Next":"Format_Parallel_Outputs","ResultPath":"$.parallel_results","Branches":[{"StartAt":"Mock_OCR_Worker","States":{"Mock_OCR_Worker":{"Type":"Pass","Result":{"name":"ZHANG SAN","id_number_masked":"**************1234","expiry_date":"2030-05-01","issuing_authority":"XX Public Security Bureau","id_valid":true},"ResultPath":"$.data","Next":"OCR_Set_Status"},"OCR_Set_Status":{"Type":"Pass","Parameters":{"data.$":"$.data","has_error":false},"End":true}}},{"StartAt":"Mock_Face_Worker","States":{"Mock_Face_Worker":{"Type":"Pass","Result":{"similarity":92.37,"face_matched":true},"ResultPath":"$.data","Next":"Face_Set_Status"},"Face_Set_Status":{"Type":"Pass","Parameters":{"data.$":"$.data","has_error":false},"End":true}}}]},"Format_Parallel_Outputs":{"Type":"Pass","Parameters":{"application_id.$":"$.application_id","created_at.$":"$.created_at","ocr_result.$":"$.parallel_results[0]","face_result.$":"$.parallel_results[1]"},"Next":"Evaluate_KYC_Decision"},"Evaluate_KYC_Decision":{"Type":"Choice","Choices":[{"Variable":"$.ocr_result.has_error","BooleanEquals":true,"Next":"Decision_Fail_OCR"},{"Variable":"$.ocr_result.data.id_valid","BooleanEquals":false,"Next":"Decision_Fail_Expired"},{"Variable":"$.face_result.has_error","BooleanEquals":true,"Next":"Decision_Review_Face_Error"},{"Variable":"$.face_result.data.similarity","NumericLessThan":80,"Next":"Decision_Review_Low_Confidence"}],"Default":"Decision_Pass"},"Decision_Fail_OCR":{"Type":"Pass","Result":{"review_status":"FAIL","reason":"ocr_failed"},"ResultPath":"$.decision","Next":"Persist_To_DynamoDB"},"Decision_Fail_Expired":{"Type":"Pass","Result":{"review_status":"FAIL","reason":"id_expired"},"ResultPath":"$.decision","Next":"Persist_To_DynamoDB"},"Decision_Review_Face_Error":{"Type":"Pass","Result":{"review_status":"NEEDS_HUMAN_REVIEW","reason":"face_error"},"ResultPath":"$.decision","Next":"Persist_To_DynamoDB"},"Decision_Review_Low_Confidence":{"Type":"Pass","Result":{"review_status":"NEEDS_HUMAN_REVIEW","reason":"similarity_below_80"},"ResultPath":"$.decision","Next":"Persist_To_DynamoDB"},"Decision_Pass":{"Type":"Pass","Result":{"review_status":"PASS","reason":"auto_approved"},"ResultPath":"$.decision","Next":"Persist_To_DynamoDB"},"Persist_To_DynamoDB":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:putItem","Parameters":{"TableName":"vericloud-kyc-table","Item":{"application_id":{"S.$":"$.application_id"},"created_at":{"S.$":"$.created_at"},"processed_at":{"S.$":"$$.State.EnteredTime"},"review_status":{"S.$":"$.decision.review_status"},"reason":{"S.$":"$.decision.reason"},"name":{"S.$":"States.ArrayGetItem(States.Array($.ocr_result.data.name, 'N/A'), 0)"},"id_number_masked":{"S.$":"States.ArrayGetItem(States.Array($.ocr_result.data.id_number_masked, 'N/A'), 0)"},"expiry_date":{"S.$":"States.ArrayGetItem(States.Array($.ocr_result.data.expiry_date, 'N/A'), 0)"},"issuing_authority":{"S.$":"States.ArrayGetItem(States.Array($.ocr_result.data.issuing_authority, 'N/A'), 0)"},"id_valid":{"BOOL.$":"$.ocr_result.data.id_valid"},"similarity":{"N.$":"States.Format('{}', States.ArrayGetItem(States.Array($.face_result.data.similarity, 0.0), 0))"}}},"End":true}}}
+{
+  "Comment": "VeriCloud KYC workflow (real). Contract: docs/interface.md v1.3.1 sections 4, 5.5, 6, 7. Demo account 153547984638.",
+  "StartAt": "Parallel_KYC_Verification",
+  "States": {
+    "Parallel_KYC_Verification": {
+      "Type": "Parallel",
+      "Comment": "OCR and face run at the same time; each branch catches its own errors so the other result is kept.",
+      "Branches": [
+        {
+          "StartAt": "OCR_Invoke",
+          "States": {
+            "OCR_Invoke": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:153547984638:function:vericloud-ocr",
+                "Payload.$": "$"
+              },
+              "OutputPath": "$.Payload",
+              "TimeoutSeconds": 90,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "OcrExtractionError"
+                  ],
+                  "ResultPath": "$.error",
+                  "Next": "OCR_Record_Error"
+                },
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "ResultPath": "$.error",
+                  "Next": "OCR_Record_Error"
+                }
+              ],
+              "End": true
+            },
+            "OCR_Record_Error": {
+              "Type": "Pass",
+              "Comment": "interface 5.5: a failed branch becomes {ocr_error: <error name>}; the workflow continues",
+              "Parameters": {
+                "ocr_error.$": "$.error.Error"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Face_Invoke",
+          "States": {
+            "Face_Invoke": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:153547984638:function:vericloud-face",
+                "Payload.$": "$"
+              },
+              "OutputPath": "$.Payload",
+              "TimeoutSeconds": 90,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "FaceNotDetectedError",
+                    "FaceCompareError"
+                  ],
+                  "ResultPath": "$.error",
+                  "Next": "Face_Record_Error"
+                },
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "ResultPath": "$.error",
+                  "Next": "Face_Record_Error"
+                }
+              ],
+              "End": true
+            },
+            "Face_Record_Error": {
+              "Type": "Pass",
+              "Comment": "interface 5.5: a failed branch becomes {face_error: <error name>}; the workflow continues",
+              "Parameters": {
+                "face_error.$": "$.error.Error"
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultSelector": {
+        "ocr.$": "$[0]",
+        "face.$": "$[1]"
+      },
+      "ResultPath": "$.checks",
+      "Next": "Merge_Results"
+    },
+    "Merge_Results": {
+      "Type": "Pass",
+      "Comment": "Flatten to the interface 5.5 shape; keeps received_at for the DynamoDB row.",
+      "Parameters": {
+        "application_id.$": "$.application_id",
+        "bucket.$": "$.bucket",
+        "id_card_key.$": "$.id_card_key",
+        "selfie_key.$": "$.selfie_key",
+        "created_at.$": "$.created_at",
+        "received_at.$": "$.received_at",
+        "ocr.$": "$.checks.ocr",
+        "face.$": "$.checks.face"
+      },
+      "Next": "Evaluate_KYC_Decision"
+    },
+    "Evaluate_KYC_Decision": {
+      "Type": "Choice",
+      "Comment": "interface section 6, in order, first match wins",
+      "Choices": [
+        {
+          "Variable": "$.ocr.ocr_error",
+          "IsPresent": true,
+          "Next": "Decision_Fail_OCR"
+        },
+        {
+          "Variable": "$.ocr.id_valid",
+          "BooleanEquals": false,
+          "Next": "Decision_Fail_Expired"
+        },
+        {
+          "Variable": "$.face.face_error",
+          "IsPresent": true,
+          "Next": "Decision_Review_Face_Error"
+        },
+        {
+          "Variable": "$.face.similarity",
+          "NumericLessThan": 80,
+          "Next": "Decision_Review_Low_Similarity"
+        }
+      ],
+      "Default": "Decision_Pass"
+    },
+    "Decision_Fail_OCR": {
+      "Type": "Pass",
+      "Result": {
+        "review_status": "FAIL",
+        "reason": "ocr_failed"
+      },
+      "ResultPath": "$.decision",
+      "Next": "Route_Persist"
+    },
+    "Decision_Fail_Expired": {
+      "Type": "Pass",
+      "Result": {
+        "review_status": "FAIL",
+        "reason": "id_expired"
+      },
+      "ResultPath": "$.decision",
+      "Next": "Route_Persist"
+    },
+    "Decision_Review_Face_Error": {
+      "Type": "Pass",
+      "Result": {
+        "review_status": "NEEDS_HUMAN_REVIEW",
+        "reason": "face_error"
+      },
+      "ResultPath": "$.decision",
+      "Next": "Route_Persist"
+    },
+    "Decision_Review_Low_Similarity": {
+      "Type": "Pass",
+      "Result": {
+        "review_status": "NEEDS_HUMAN_REVIEW",
+        "reason": "similarity_below_80"
+      },
+      "ResultPath": "$.decision",
+      "Next": "Route_Persist"
+    },
+    "Decision_Pass": {
+      "Type": "Pass",
+      "Result": {
+        "review_status": "PASS",
+        "reason": "auto_approved"
+      },
+      "ResultPath": "$.decision",
+      "Next": "Route_Persist"
+    },
+    "Route_Persist": {
+      "Type": "Choice",
+      "Comment": "One PutItem per combination so a field is written only when it exists (interface section 4). A path that does not exist would fail the task.",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.ocr.ocr_error",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.face.face_error",
+              "IsPresent": true
+            }
+          ],
+          "Next": "Persist_OcrFailed_FaceFailed"
+        },
+        {
+          "Variable": "$.ocr.ocr_error",
+          "IsPresent": true,
+          "Next": "Persist_OcrFailed_FaceOk"
+        },
+        {
+          "Variable": "$.face.face_error",
+          "IsPresent": true,
+          "Next": "Persist_OcrOk_FaceFailed"
+        }
+      ],
+      "Default": "Persist_OcrOk_FaceOk"
+    },
+    "Persist_OcrOk_FaceOk": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "vericloud-kyc-table",
+        "Item": {
+          "application_id": {
+            "S.$": "$.application_id"
+          },
+          "created_at": {
+            "S.$": "$.created_at"
+          },
+          "received_at": {
+            "S.$": "$.received_at"
+          },
+          "processed_at": {
+            "S.$": "$$.State.EnteredTime"
+          },
+          "review_status": {
+            "S.$": "$.decision.review_status"
+          },
+          "reason": {
+            "S.$": "$.decision.reason"
+          },
+          "name": {
+            "S.$": "$.ocr.name"
+          },
+          "id_number_masked": {
+            "S.$": "$.ocr.id_number_masked"
+          },
+          "expiry_date": {
+            "S.$": "$.ocr.expiry_date"
+          },
+          "issuing_authority": {
+            "S.$": "$.ocr.issuing_authority"
+          },
+          "id_valid": {
+            "BOOL.$": "$.ocr.id_valid"
+          },
+          "similarity": {
+            "N.$": "States.Format('{}', $.face.similarity)"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ProvisionedThroughputExceededException",
+            "DynamoDB.InternalServerErrorException",
+            "DynamoDB.RequestLimitExceeded"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "End": true
+    },
+    "Persist_OcrOk_FaceFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "vericloud-kyc-table",
+        "Item": {
+          "application_id": {
+            "S.$": "$.application_id"
+          },
+          "created_at": {
+            "S.$": "$.created_at"
+          },
+          "received_at": {
+            "S.$": "$.received_at"
+          },
+          "processed_at": {
+            "S.$": "$$.State.EnteredTime"
+          },
+          "review_status": {
+            "S.$": "$.decision.review_status"
+          },
+          "reason": {
+            "S.$": "$.decision.reason"
+          },
+          "name": {
+            "S.$": "$.ocr.name"
+          },
+          "id_number_masked": {
+            "S.$": "$.ocr.id_number_masked"
+          },
+          "expiry_date": {
+            "S.$": "$.ocr.expiry_date"
+          },
+          "issuing_authority": {
+            "S.$": "$.ocr.issuing_authority"
+          },
+          "id_valid": {
+            "BOOL.$": "$.ocr.id_valid"
+          },
+          "face_error": {
+            "S.$": "$.face.face_error"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ProvisionedThroughputExceededException",
+            "DynamoDB.InternalServerErrorException",
+            "DynamoDB.RequestLimitExceeded"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "End": true
+    },
+    "Persist_OcrFailed_FaceOk": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "vericloud-kyc-table",
+        "Item": {
+          "application_id": {
+            "S.$": "$.application_id"
+          },
+          "created_at": {
+            "S.$": "$.created_at"
+          },
+          "received_at": {
+            "S.$": "$.received_at"
+          },
+          "processed_at": {
+            "S.$": "$$.State.EnteredTime"
+          },
+          "review_status": {
+            "S.$": "$.decision.review_status"
+          },
+          "reason": {
+            "S.$": "$.decision.reason"
+          },
+          "similarity": {
+            "N.$": "States.Format('{}', $.face.similarity)"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ProvisionedThroughputExceededException",
+            "DynamoDB.InternalServerErrorException",
+            "DynamoDB.RequestLimitExceeded"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "End": true
+    },
+    "Persist_OcrFailed_FaceFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "vericloud-kyc-table",
+        "Item": {
+          "application_id": {
+            "S.$": "$.application_id"
+          },
+          "created_at": {
+            "S.$": "$.created_at"
+          },
+          "received_at": {
+            "S.$": "$.received_at"
+          },
+          "processed_at": {
+            "S.$": "$$.State.EnteredTime"
+          },
+          "review_status": {
+            "S.$": "$.decision.review_status"
+          },
+          "reason": {
+            "S.$": "$.decision.reason"
+          },
+          "face_error": {
+            "S.$": "$.face.face_error"
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ProvisionedThroughputExceededException",
+            "DynamoDB.InternalServerErrorException",
+            "DynamoDB.RequestLimitExceeded"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "End": true
+    }
+  }
+}

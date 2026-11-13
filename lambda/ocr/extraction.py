@@ -53,6 +53,15 @@ def _single(values: list[str], field: str) -> str:
     return unique.pop()
 
 
+def _strip_long_digit_runs(value: str) -> str:
+    # interface v1.3 section 5.3: issuing_authority must never carry 8+ consecutive
+    # digits, so an ID number OCR'd onto the same line cannot leak into DynamoDB.
+    # Spaced runs ("000000 20000101 1234") count as one run.
+    value = _ID_RUN.sub(lambda m: "" if sum(c.isdigit() for c in m.group()) >= 8 else m.group(), value)
+    value = re.sub(r"\d{8,}", "", value)  # runs glued to letters, e.g. "局000000200001011234"
+    return re.sub(r"\s+", " ", value).strip(" \t:：,，;；|-")
+
+
 def _line_value(value: str) -> str:
     # A label may occupy its own OCR line; the next nonempty line is its value.
     return next((line.strip() for line in value.splitlines() if line.strip()), "")
@@ -113,7 +122,7 @@ def extract_fields(text: str, *, today: date | None = None) -> dict:
     expiry = _expiry(fields["expiry_date"])
     authorities = []
     for value in fields["issuing_authority"]:
-        authority = re.sub(r"\s+", " ", _line_value(value)).strip()
+        authority = _strip_long_digit_runs(re.sub(r"\s+", " ", _line_value(value)).strip())
         if 2 <= len(authority) <= 120 and re.search(r"[A-Za-z\u3400-\u9fff]", authority):
             authorities.append(authority)
     authority = _single(authorities, "issuing_authority")

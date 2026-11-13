@@ -102,6 +102,23 @@ def test_identifier_with_trailing_extra_digits_is_not_truncated():
         extract_fields(TEXT.replace("000000200001011234", "000000200001011234 5"), today=TODAY)
 
 
+@pytest.mark.parametrize("authority_line", [
+    "测试市公安局 000000200001011234",
+    "测试市公安局000000200001011234",
+    "测试市公安局 000000 20000101 1234",
+    "000000200001011234 测试市公安局",
+])
+def test_issuing_authority_never_carries_an_id_number(authority_line):
+    # interface v1.3 section 5.3: no run of 8+ digits in issuing_authority
+    result = extract_fields(TEXT.replace("测试市公安局", authority_line), today=TODAY)
+    assert result == EXPECTED
+
+
+def test_issuing_authority_keeps_short_numbers():
+    result = extract_fields(TEXT.replace("测试市公安局", "测试市公安局第2分局"), today=TODAY)
+    assert result["issuing_authority"] == "测试市公安局第2分局"
+
+
 def test_english_label_does_not_match_inside_a_value():
     text = "Name: TEST SURNAME\nID Number: 000000200001011234\nExpiry Date: 2030-05-01\nIssuing Authority: MIDDLESEX BUREAU"
     result = extract_fields(text, today=TODAY)
