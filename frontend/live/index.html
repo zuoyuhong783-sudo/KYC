@@ -21,9 +21,9 @@ main{max-width:1240px;margin:0 auto;padding:20px 24px 48px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
 h2{font-size:16px;margin:0 0 12px}
 .muted{color:var(--soft);font-size:13px}
-.grid{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+.grid{display:grid;grid-template-columns:470px 1fr;gap:18px;align-items:start}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
-.drops{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drops{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .drop{border:2px dashed var(--line);border-radius:12px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;padding:8px;background:#fafbfc;position:relative;overflow:hidden}
 .drop.drag{border-color:var(--blue);background:var(--runbg)}
 .drop img{max-width:100%;max-height:110px;border-radius:8px;object-fit:contain}
@@ -101,7 +101,8 @@ dialog input{width:100%;padding:10px;border:1px solid var(--line);border-radius:
     <div class="card">
       <h2>1 · Upload documents</h2>
       <div class="drops">
-        <label class="drop" id="dropId"><input type="file" accept=".jpg,.jpeg,.png" id="fileId"><b>ID card photo</b><small>JPG / PNG, click or drop</small></label>
+        <label class="drop" id="dropId"><input type="file" accept=".jpg,.jpeg,.png" id="fileId"><b>ID card · front</b><small>name, number, photo</small></label>
+        <label class="drop" id="dropBack"><input type="file" accept=".jpg,.jpeg,.png" id="fileBack"><b>ID card · back</b><small>issuing authority, validity</small></label>
         <label class="drop" id="dropSelfie"><input type="file" accept=".jpg,.jpeg,.png" id="fileSelfie"><b>Selfie</b><small>JPG / PNG, click or drop</small></label>
       </div>
       <label class="chk"><input type="checkbox" id="corrupt"> <span><b>Fault demo:</b> upload a truncated (corrupted) selfie to show pre-check rejection, SQS retries and the dead-letter queue</span></label>
@@ -168,19 +169,19 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
 });
 
 // ---------- file selection ----------
-const files = {id: null, selfie: null};
+const files = {id: null, back: null, selfie: null};
 function pick(kind, file) {
   if (!file) return;
   if (!/\.(jpe?g|png)$/i.test(file.name)) { $('err').textContent = 'Only .jpg, .jpeg or .png'; return; }
   if (!file.size || file.size > 10 * 1024 * 1024) { $('err').textContent = 'Each image must be 1 byte – 10 MB'; return; }
   files[kind] = file; $('err').textContent = '';
-  const drop = kind === 'id' ? $('dropId') : $('dropSelfie');
-  const img = new Image(); img.alt = kind === 'id' ? 'ID card preview' : 'Selfie preview'; img.src = URL.createObjectURL(file);
+  const drop = {id: $('dropId'), back: $('dropBack'), selfie: $('dropSelfie')}[kind];
+  const img = new Image(); img.alt = {id: 'ID card front preview', back: 'ID card back preview', selfie: 'Selfie preview'}[kind]; img.src = URL.createObjectURL(file);
   [...drop.childNodes].forEach(n => { if (n.tagName !== 'INPUT') n.remove(); });
   const s = document.createElement('small'); s.textContent = file.name + ' · ' + (file.size/1024).toFixed(0) + ' KB';
   drop.append(img, s); ready();
 }
-for (const [kind, dropId, inputId] of [['id','dropId','fileId'], ['selfie','dropSelfie','fileSelfie']]) {
+for (const [kind, dropId, inputId] of [['id','dropId','fileId'], ['back','dropBack','fileBack'], ['selfie','dropSelfie','fileSelfie']]) {
   const drop = $(dropId);
   $(inputId).onchange = e => pick(kind, e.target.files[0]);
   ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
@@ -188,16 +189,16 @@ for (const [kind, dropId, inputId] of [['id','dropId','fileId'], ['selfie','drop
   drop.addEventListener('drop', e => pick(kind, e.dataTransfer.files[0]));
 }
 let busy = false;
-const ready = () => { $('submit').disabled = busy || !files.id || !files.selfie || !$('consent').checked; };
+const ready = () => { $('submit').disabled = busy || !files.id || !files.back || !files.selfie || !$('consent').checked; };
 $('consent').onchange = ready;
 
 // ---------- pipeline model ----------
 const ARCH = [['s3','S3'],['sqs','SQS'],['starter','Starter λ'],['ocr','OCR λ'],['face','Rekognition λ'],['sfn','Step Functions'],['ddb','DynamoDB'],['sns','SNS email']];
 const STAGES = [
   ['links',  'Upload links issued',          'API returns two presigned PUT URLs, valid 5 min'],
-  ['idcard', 'ID card uploaded to S3',       'raw/id-card/ · private bucket, SSE-S3'],
+  ['idcard', 'ID card front + back uploaded to S3', 'raw/id-card-front/, raw/id-card-back/ · private bucket, SSE-S3'],
   ['selfie', 'Selfie uploaded → S3 event',   'raw/selfie/ upload is the trigger'],
-  ['start',  'Queued in SQS, pre-check passed', 'starter decodes both images, then starts the workflow'],
+  ['start',  'Queued in SQS, pre-check passed', 'starter decodes all three images, joins front + back, starts the workflow'],
   ['ocr',    'OCR reads the ID card',        'vericloud-ocr (RapidOCR container)'],
   ['face',   'Face comparison',              'vericloud-face · Rekognition CompareFaces'],
   ['decide', 'Decision rules',               '5 ordered rules, first match wins'],
@@ -229,13 +230,15 @@ function render(tr, t0, local) {
   const step = n => (tr.steps || []).find(s => s.name === n);
   const any = pre => (tr.steps || []).find(s => s.name && s.name.startsWith(pre));
   st.links = {cls:'ok', t: rel(local.links, t0)};
-  const idUp = tr.uploads?.id_card, sfUp = tr.uploads?.selfie;
+  const up = tr.uploads || {}, front = up.id_card_front || up.id_card, back = up.id_card_back, sfUp = up.selfie;
+  const idUp = front && back ? {key: 'front + back', size: front.size + back.size} : front;
   st.idcard = idUp ? {cls:'ok', t: rel(local.idDone, t0), note:`${idUp.key} · ${kb(idUp.size)}`} : {cls: local.idDone ? 'run' : ''};
   st.selfie = sfUp ? {cls:'ok', t: rel(local.selfieDone, t0), note:`${sfUp.key} · ${kb(sfUp.size)}${local.corrupt ? ' · truncated on purpose' : ''}`} : {cls: local.selfieDone ? 'run' : ''};
   if (idUp || sfUp) arch.s3 = 'ok';
   const ex = tr.execution;
   if (ex) {
-    st.start = {cls:'ok', t: rel(ms(ex.started_at), t0), note: tr.result?.received_at ? `starter received it at ${new Date(tr.result.received_at).toLocaleTimeString()} · execution ${ex.status}` : `execution ${ex.status}`};
+    const joined = up.id_card_front && up.id_card ? 'front + back joined into ' + up.id_card.key.split('/').slice(0,2).join('/') + '/ · ' : '';
+    st.start = {cls:'ok', t: rel(ms(ex.started_at), t0), note: joined + (tr.result?.received_at ? `starter received it at ${new Date(tr.result.received_at).toLocaleTimeString()} · execution ${ex.status}` : `execution ${ex.status}`)};
     arch.sqs = arch.starter = 'ok'; arch.sfn = ex.status === 'RUNNING' ? 'run' : ex.status === 'SUCCEEDED' ? 'ok' : 'bad';
   } else if (sfUp) {
     const waited = (Date.now() - (local.selfieDone || Date.now())) / 1000;
@@ -304,10 +307,11 @@ $('submit').onclick = async () => {
   const t0 = Date.now(); drawArch(); drawStages({links:{cls:'run'}});
   try {
     const {status, body} = await api('/applications', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({application_id:id, id_card_extension:ext(files.id), selfie_extension:ext(files.selfie)})});
+      body: JSON.stringify({application_id:id, id_card_extension:ext(files.id), id_card_back_extension:ext(files.back), selfie_extension:ext(files.selfie)})});
     if (status !== 200) throw new Error(body.error || 'Could not create the application (' + status + ')');
     local.links = Date.now(); drawStages({links:{cls:'ok', t: rel(local.links, t0)}, idcard:{cls:'run'}});
-    await put(body.id_card_url, files.id); local.idDone = Date.now();
+    if (!body.id_card_back_url) throw new Error('This API does not accept an ID back side yet: rerun infrastructure/setup_api.sh');
+    await put(body.id_card_url, files.id); await put(body.id_card_back_url, files.back); local.idDone = Date.now();
     drawStages({links:{cls:'ok', t: rel(local.links, t0)}, idcard:{cls:'ok', t: rel(local.idDone, t0)}, selfie:{cls:'run'}});
     const selfieBody = corrupt ? files.selfie.slice(0, Math.max(200, Math.floor(files.selfie.size * 0.35)), files.selfie.type) : files.selfie;
     await put(body.selfie_url, selfieBody); local.selfieDone = Date.now();

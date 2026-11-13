@@ -3,8 +3,10 @@
 Served through an API Gateway HTTP API, payload format 2.0 (CORS is configured on the API, not here).
 
   POST /applications
-       body {"application_id", "id_card_extension", "selfie_extension"}
-       -> 200 {"application_id", "id_card_url", "selfie_url", "expires_in"}
+       body {"application_id", "id_card_extension", "selfie_extension"[, "id_card_back_extension"]}
+       -> 200 {"application_id", "id_card_url", "selfie_url", "expires_in"[, "id_card_back_url"]}
+       With id_card_back_extension (v1.5) the ID front goes to raw/id-card-front/, the
+       back to raw/id-card-back/, and the starter stitches them into raw/id-card/.
        Two presigned PUT URLs (interface sections 1 and 3: raw/id-card/<id><ext>,
        raw/selfie/<id><ext>, 300 s). The browser uploads the ID card first, then
        the selfie; the selfie upload starts the pipeline (A5).
@@ -131,16 +133,32 @@ def create_application(event):
     if not id_ext or not selfie_ext:
         return _resp(400, {"error": "extensions must be .jpg, .jpeg or .png"})
 
-    id_key = f"raw/id-card/{app_id}{id_ext}"
+    back_ext = None
+    if data.get("id_card_back_extension") is not None:
+        back_ext = _ext(data.get("id_card_back_extension"))
+        if not back_ext:
+            return _resp(400, {"error": "extensions must be .jpg, .jpeg or .png"})
+
+    # v1.5: with a back side, front and back go to their own prefixes and the starter
+    # stitches them into raw/id-card/<id>.jpg. Without one, the single image goes
+    # straight to raw/id-card/ as before.
     selfie_key = f"raw/selfie/{app_id}{selfie_ext}"
+    if back_ext:
+        id_key = f"raw/id-card-front/{app_id}{id_ext}"
+        back_key = f"raw/id-card-back/{app_id}{back_ext}"
+    else:
+        id_key, back_key = f"raw/id-card/{app_id}{id_ext}", None
     # Never hand out a URL that would overwrite an earlier application's photos.
-    if _exists(selfie_key) or _exists(id_key):
+    if any(_exists(k) for k in (selfie_key, id_key, back_key) if k):
         return _resp(409, {"error": "application_id already used"})
 
     sign = lambda key: _s3_client().generate_presigned_url(
         "put_object", Params={"Bucket": BUCKET, "Key": key}, ExpiresIn=URL_TTL)
-    return _resp(200, {"application_id": app_id, "id_card_url": sign(id_key),
-                       "selfie_url": sign(selfie_key), "expires_in": URL_TTL})
+    out = {"application_id": app_id, "id_card_url": sign(id_key),
+           "selfie_url": sign(selfie_key), "expires_in": URL_TTL}
+    if back_key:
+        out["id_card_back_url"] = sign(back_key)
+    return _resp(200, out)
 
 
 def get_result(app_id):
@@ -200,7 +218,9 @@ def trace(app_id, context):
     if not UUID_V4.match(app_id):
         return _resp(400, {"error": "application_id must be a lowercase UUID v4"})
     out = {"application_id": app_id,
-           "uploads": {"id_card": _find_upload("raw/id-card/", app_id),
+           "uploads": {"id_card_front": _find_upload("raw/id-card-front/", app_id),
+                       "id_card_back": _find_upload("raw/id-card-back/", app_id),
+                       "id_card": _find_upload("raw/id-card/", app_id),   # single image, or the stitched one
                        "selfie": _find_upload("raw/selfie/", app_id)},
            "execution": None, "steps": [], "result": None}
 

@@ -1,8 +1,8 @@
-# VeriCloud 接口约定 v1.4（Interface Contract）
+# VeriCloud 接口约定 v1.5（Interface Contract）
 
 | 项目 | 内容 |
 |---|---|
-| 版本 | v1.4 · 2026-11-13 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
+| 版本 | v1.5 · 2026-11-13 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
 | 状态 | 待全员确认（确认方式：见文末“确认签名”，B/C/D/F 必须确认，E 建议确认） |
 | 生效规则 | 本文件是全组**唯一**的接口事实来源。所有代码、配置、报告里的资源名、S3 路径、JSON 字段、DynamoDB 字段必须与本文件完全一致。要改名或加字段：先在群里提，A 更新本文件并升版本号（v1.1…）后才生效。 |
 | 来源 | 《01_VeriCloud_六人分工与时间线执行方案》第一节、第十二节 |
@@ -69,6 +69,7 @@
 | S3 桶 | `vericloud-raw-1009-a`（v1.3.1 起的正式名；原名 `vericloud-raw-1009` 留在 C 的个人账号放人脸测试素材。桶名全球唯一，各人自己账号里测试时可加个人后缀，演示账号用此名） | C |
 | S3 路径（证件） | `raw/id-card/<application_id>.jpg`（或 `.png`） | C |
 | S3 路径（自拍） | `raw/selfie/<application_id>.jpg`（或 `.png`） | C |
+| S3 路径（证件正反面，v1.5 可选） | `raw/id-card-front/<application_id>.*`、`raw/id-card-back/<application_id>.*`；starter 拼成 `raw/id-card/<application_id>.jpg` | A |
 | SQS 入口队列 | `vericloud-ingest-queue` | D |
 | SQS 死信队列 | `vericloud-ingest-dlq` | D |
 | Lambda | `vericloud-starter` | D |
@@ -148,6 +149,8 @@
 2. 两个文件都不是 0 字节
 3. 扩展名在允许列表中
 4. 两张图都能被 PIL **完整解码**：`Image.open(...)` 后调用 `.load()` 不报错（v1.3；不要设置 `ImageFile.LOAD_TRUNCATED_IMAGES = True`）。只用 `verify()` 会放过截断的 JPEG；也不要用「文件结尾是不是 `FF D9`」判断，会误杀尾部带附加数据的正常手机照片
+
+**证件正反面（v1.5）**：`raw/id-card/` 下没有证件图时，starter 找 `raw/id-card-front/` 和 `raw/id-card-back/` 两张（缺反面算预检失败），两张都完整解码后，正面在上、反面在下拼成一张宽 1200 的 JPEG，写到 `raw/id-card/<application_id>.jpg`，状态机输入里的 `id_card_key` 就是这张。OCR 和人脸比对读的都是它，所以它们的代码不用改；重试时直接用已拼好的图。
 
 任一不满足：抛 `PrecheckFailedError`（消息写明原因）→ SQS 重试，3 次后进 DLQ。全部满足：`start_execution(name=application_id, input=<5.1 的 JSON>)`；若报 `ExecutionAlreadyExists`，视为成功（防重复）。
 
@@ -239,7 +242,7 @@ OCR 失败时，`ocr` 变为：
 
 | 请求 | 输入 | 输出 |
 |---|---|---|
-| `POST /applications` | `{"application_id", "id_card_extension", "selfie_extension"}`（小写 UUID v4；扩展名 `.jpg`/`.jpeg`/`.png`） | `200 {"application_id", "id_card_url", "selfie_url", "expires_in": 300}`；参数错 `400`；编号已用过 `409` |
+| `POST /applications` | `{"application_id", "id_card_extension", "selfie_extension"}`，可加 `"id_card_back_extension"`（v1.5：此时多返回 `id_card_back_url`，正面传到 `raw/id-card-front/`）（小写 UUID v4；扩展名 `.jpg`/`.jpeg`/`.png`） | `200 {"application_id", "id_card_url", "selfie_url", "expires_in": 300}`；参数错 `400`；编号已用过 `409` |
 | `GET /applications/<application_id>` | — | 完成：`200 {"review_status", "reason", "processed_at"}`；处理中：`404 {"status": "PENDING"}` |
 
 | `GET /applications/<application_id>/trace`（演示页实时进度） | — | `200 {"uploads", "execution", "steps", "result"}`：S3 里的两张图、Step Functions 执行状态和已走过的每个状态、表里的结果（姓名只留首字，证件号本来就是脱敏的） |
@@ -344,6 +347,7 @@ class OcrExtractionError(Exception):
 | v1.3 | 2026-11-10 | A | 采纳 E 的变更申请（评审见 `docs/review_A_on_E_proposal_v1.3.md`）：§1 时间格式兼容 `Z`/`+00:00`/小数秒；§4、§5.1 加 `received_at`；§5.2 预检改为完整解码 `load()`；§5.3 `issuing_authority` 不得含 8 位以上连续数字；§9 加 `expired`/`missing_field` 两类与 `expected_reason` 列，图片不进 git。D 的 starter 与 E 的脚本已按此实现；B 的 §5.3 和 D 状态机写入 `received_at` 在 A6 联调时完成 |
 | v1.3.1 | 2026-11-10 | A | §3 正式桶名改为 `vericloud-raw-1009-a`（原名留在 C 的个人账号作人脸测试素材，不再要求删除）；同步 §2、§5.1、§5.5、§8 的桶名。各模块代码从 S3 事件或命令行参数读桶名，不用改；只有 C 的 `security/presign.py` 写死了默认桶名，已由 A 代改 |
 | v1.4 | 2026-11-13 | A | 新增 §5.7 前端接口 `vericloud-api`（申请上传地址、查询结果、实时进度 `trace`、运维 `dashboard`），接入组内前端 `frontend/dist` 和演示页 `frontend/live`；只新增，不改已有字段 |
+| v1.5 | 2026-11-13 | A | 身份证正反面分开上传（真实二代证的签发机关、有效期限在反面）：§3 新增两个前缀；§5.2 starter 把两面拼成 `raw/id-card/<id>.jpg`；§5.7 `id_card_back_extension`。单张证件图照旧可用；OCR、人脸、状态机不变 |
 
 ---
 

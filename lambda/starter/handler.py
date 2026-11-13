@@ -3,7 +3,7 @@ import json
 import boto3
 import io
 from datetime import datetime, timezone
-from PIL import Image
+from PIL import Image, ImageOps
 
 s3_client = boto3.client('s3')
 sfn_client = boto3.client('stepfunctions')
@@ -42,20 +42,57 @@ def validate_s3_image(bucket: str, key: str):
         image.load()
     except Exception as e:
         raise PrecheckFailedError(f"Corrupted or invalid image file ({key}): {str(e)}")
+    return image
 
-def find_id_card_key(bucket: str, application_id: str) -> str:
-    """
-    针对证件照扩展名：依次尝试 .jpg, .jpeg, .png
-    路径统一使用连字符 raw/id-card/
-    """
+def _find_key(bucket: str, prefix: str, application_id: str):
+    """在 prefix 下依次尝试 .jpg / .jpeg / .png，找不到返回 None"""
     for ext in ('.jpg', '.jpeg', '.png'):
-        candidate_key = f"raw/id-card/{application_id}{ext}"
+        candidate_key = f"{prefix}{application_id}{ext}"
         try:
             s3_client.head_object(Bucket=bucket, Key=candidate_key)
             return candidate_key
         except Exception:
             continue
-    raise PrecheckFailedError(f"ID card image not found for {application_id} (tried .jpg, .jpeg, .png under raw/id-card/)")
+    return None
+
+def stitch_front_back(front: Image.Image, back: Image.Image) -> bytes:
+    """
+    interface v1.5：身份证正面（姓名、号码、人像）在上，反面（签发机关、有效期限）在下，
+    拼成一张图。OCR 与人脸比对都读这一张，所以它们的代码和镜像不用改。
+    """
+    width, gap = 1200, 40
+    parts = []
+    for img in (front, back):
+        img = ImageOps.exif_transpose(img).convert('RGB')
+        parts.append(img.resize((width, max(1, round(img.height * width / img.width))), Image.LANCZOS))
+    canvas = Image.new('RGB', (width, parts[0].height + gap + parts[1].height), 'white')
+    canvas.paste(parts[0], (0, 0))
+    canvas.paste(parts[1], (0, parts[0].height + gap))
+    out = io.BytesIO()
+    canvas.save(out, format='JPEG', quality=92)
+    return out.getvalue()
+
+def find_id_card_key(bucket: str, application_id: str) -> str:
+    """
+    1) 单张证件图 raw/id-card/<id>.*（旧前端、测试素材）：直接使用。
+    2) 正反两面 raw/id-card-front/<id>.* + raw/id-card-back/<id>.*（v1.5）：预检两面，
+       拼成 raw/id-card/<id>.jpg 后返回这个 key。重试时第 1 步就能找到拼好的图。
+    """
+    key = _find_key(bucket, 'raw/id-card/', application_id)
+    if key:
+        return key
+    front_key = _find_key(bucket, 'raw/id-card-front/', application_id)
+    back_key = _find_key(bucket, 'raw/id-card-back/', application_id)
+    if front_key and not back_key:
+        raise PrecheckFailedError(f"ID card back side not found for {application_id} (raw/id-card-back/)")
+    if not front_key:
+        raise PrecheckFailedError(f"ID card image not found for {application_id} (tried raw/id-card/ and raw/id-card-front/)")
+    front = validate_s3_image(bucket, front_key)
+    back = validate_s3_image(bucket, back_key)
+    key = f"raw/id-card/{application_id}.jpg"
+    s3_client.put_object(Bucket=bucket, Key=key, Body=stitch_front_back(front, back), ContentType='image/jpeg')
+    print(f"Stitched {front_key} + {back_key} -> {key}")
+    return key
 
 def lambda_handler(event, context):
     if not STATE_MACHINE_ARN:
