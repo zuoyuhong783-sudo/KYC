@@ -82,8 +82,13 @@ def _ddb_client():
     return _ddb
 
 
+# CORS is answered here as well: the HTTP API's own CORS setting did not take effect
+# in the Learner Lab account. If it does, API Gateway uses its own headers instead.
+CORS_HEADERS = {"Access-Control-Allow-Origin": "*"}
+
+
 def _resp(status, body):
-    return {"statusCode": status, "headers": {"Content-Type": "application/json"},
+    return {"statusCode": status, "headers": {"Content-Type": "application/json", **CORS_HEADERS},
             "body": json.dumps(body, ensure_ascii=False)}
 
 
@@ -271,6 +276,10 @@ def lambda_handler(event, context):
     http = (event.get("requestContext") or {}).get("http") or {}
     method = http.get("method", "")
     path = event.get("rawPath") or http.get("path") or ""
+    if method == "OPTIONS":  # CORS preflight from the browser
+        return {"statusCode": 204, "headers": {**CORS_HEADERS,
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                "Access-Control-Allow-Headers": "content-type", "Access-Control-Max-Age": "300"}}
     try:
         if method == "POST" and path.rstrip("/") == "/applications":
             return create_application(event)
