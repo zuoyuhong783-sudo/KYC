@@ -1,0 +1,24 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadUploadsForExtraction",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": [
+        "arn:aws:s3:::vericloud-raw-1009/raw/id-card/*",
+        "arn:aws:s3:::vericloud-raw-1009/raw/selfie/*"
+      ]
+    },
+    {
+      "Sid": "WriteOwnLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:us-east-1:350325240468:log-group:/aws/lambda/vericloud-ocr:*"
+    }
+  ]
+}

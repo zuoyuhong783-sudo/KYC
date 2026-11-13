@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadKycTableStream",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeStream",
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:350325240468:table/vericloud-kyc-table/stream/*"
+    },
+    {
+      "Sid": "PublishApplicantNotifications",
+      "Effect": "Allow",
+      "Action": ["sns:Publish"],
+      "Resource": "arn:aws:sns:us-east-1:350325240468:vericloud-kyc-topic"
+    },
+    {
+      "Sid": "WriteOwnLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:us-east-1:350325240468:log-group:/aws/lambda/vericloud-notify:*"
+    }
+  ]
+}
