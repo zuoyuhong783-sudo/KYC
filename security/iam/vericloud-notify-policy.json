@@ -9,13 +9,13 @@
         "dynamodb:GetRecords",
         "dynamodb:GetShardIterator"
       ],
-      "Resource": "arn:aws:dynamodb:us-east-1:350325240468:table/vericloud-kyc-table/stream/*"
+      "Resource": "arn:aws:dynamodb:us-east-1:153547984638:table/vericloud-kyc-table/stream/*"
     },
     {
       "Sid": "PublishApplicantNotifications",
       "Effect": "Allow",
       "Action": ["sns:Publish"],
-      "Resource": "arn:aws:sns:us-east-1:350325240468:vericloud-kyc-topic"
+      "Resource": "arn:aws:sns:us-east-1:153547984638:vericloud-kyc-topic"
     },
     {
       "Sid": "WriteOwnLogs",
@@ -25,7 +25,7 @@
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:us-east-1:350325240468:log-group:/aws/lambda/vericloud-notify:*"
+      "Resource": "arn:aws:logs:us-east-1:153547984638:log-group:/aws/lambda/vericloud-notify:*"
     }
   ]
 }

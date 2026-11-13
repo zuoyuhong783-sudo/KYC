@@ -6,8 +6,8 @@
       "Effect": "Allow",
       "Action": ["lambda:InvokeFunction"],
       "Resource": [
-        "arn:aws:lambda:us-east-1:350325240468:function:vericloud-ocr",
-        "arn:aws:lambda:us-east-1:350325240468:function:vericloud-face"
+        "arn:aws:lambda:us-east-1:153547984638:function:vericloud-ocr",
+        "arn:aws:lambda:us-east-1:153547984638:function:vericloud-face"
       ]
     },
     {
@@ -18,7 +18,7 @@
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:us-east-1:350325240468:log-group:/aws/states/vericloud-kyc-workflow:*"
+      "Resource": "arn:aws:logs:us-east-1:153547984638:log-group:/aws/states/vericloud-kyc-workflow:*"
     }
   ]
 }

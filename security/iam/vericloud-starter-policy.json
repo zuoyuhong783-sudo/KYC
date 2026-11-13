@@ -6,8 +6,8 @@
       "Effect": "Allow",
       "Action": ["s3:GetObject", "s3:HeadObject"],
       "Resource": [
-        "arn:aws:s3:::vericloud-raw-1009/raw/id-card/*",
-        "arn:aws:s3:::vericloud-raw-1009/raw/selfie/*"
+        "arn:aws:s3:::vericloud-raw-1009-a/raw/id-card/*",
+        "arn:aws:s3:::vericloud-raw-1009-a/raw/selfie/*"
       ]
     },
     {
@@ -18,13 +18,13 @@
         "sqs:DeleteMessage",
         "sqs:GetQueueAttributes"
       ],
-      "Resource": "arn:aws:sqs:us-east-1:350325240468:vericloud-ingest-queue"
+      "Resource": "arn:aws:sqs:us-east-1:153547984638:vericloud-ingest-queue"
     },
     {
       "Sid": "StartKycWorkflow",
       "Effect": "Allow",
       "Action": ["states:StartExecution"],
-      "Resource": "arn:aws:states:us-east-1:350325240468:stateMachine:vericloud-kyc-workflow"
+      "Resource": "arn:aws:states:us-east-1:153547984638:stateMachine:vericloud-kyc-workflow"
     },
     {
       "Sid": "WriteOwnLogs",
@@ -34,7 +34,7 @@
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:us-east-1:350325240468:log-group:/aws/lambda/vericloud-starter:*"
+      "Resource": "arn:aws:logs:us-east-1:153547984638:log-group:/aws/lambda/vericloud-starter:*"
     }
   ]
 }
