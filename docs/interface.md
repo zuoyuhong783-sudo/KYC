@@ -1,8 +1,8 @@
-# VeriCloud 接口约定 v1.3.1（Interface Contract）
+# VeriCloud 接口约定 v1.4（Interface Contract）
 
 | 项目 | 内容 |
 |---|---|
-| 版本 | v1.3.1 · 2026-11-10 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
+| 版本 | v1.4 · 2026-11-13 · 发布人：A（Zuo Yuhong）（变更见第 10 节） |
 | 状态 | 待全员确认（确认方式：见文末“确认签名”，B/C/D/F 必须确认，E 建议确认） |
 | 生效规则 | 本文件是全组**唯一**的接口事实来源。所有代码、配置、报告里的资源名、S3 路径、JSON 字段、DynamoDB 字段必须与本文件完全一致。要改名或加字段：先在群里提，A 更新本文件并升版本号（v1.1…）后才生效。 |
 | 来源 | 《01_VeriCloud_六人分工与时间线执行方案》第一节、第十二节 |
@@ -233,6 +233,19 @@ OCR 失败时，`ocr` 变为：
 
 ---
 
+### 5.7 前端接口 `vericloud-api`（v1.4，A）
+
+浏览器只通过这两个接口和后端打交道，不持有 AWS 密钥，也不直接访问 DynamoDB。
+
+| 请求 | 输入 | 输出 |
+|---|---|---|
+| `POST /applications` | `{"application_id", "id_card_extension", "selfie_extension"}`（小写 UUID v4；扩展名 `.jpg`/`.jpeg`/`.png`） | `200 {"application_id", "id_card_url", "selfie_url", "expires_in": 300}`；参数错 `400`；编号已用过 `409` |
+| `GET /applications/<application_id>` | — | 完成：`200 {"review_status", "reason", "processed_at"}`；处理中：`404 {"status": "PENDING"}` |
+
+只返回这三个字段，**不返回**姓名、证件号。前端先 PUT 证件照，再 PUT 自拍（第 2 节）。部署：`infrastructure/setup_api.sh`（Lambda Function URL + S3 CORS）。
+
+---
+
 ## 6. 判定规则（D 的 Choice 状态，按顺序匹配，命中即停）
 
 | 顺序 | 条件 | `review_status` | `reason` |
@@ -319,6 +332,7 @@ class OcrExtractionError(Exception):
 | v1.2 | 2026-11-08 | A | 5.3：有效期「长期」统一输出 `expiry_date = "9999-12-31"`、`id_valid = true`，不再抛 `OcrExtractionError`（应 B 提问确认） |
 | v1.3 | 2026-11-10 | A | 采纳 E 的变更申请（评审见 `docs/review_A_on_E_proposal_v1.3.md`）：§1 时间格式兼容 `Z`/`+00:00`/小数秒；§4、§5.1 加 `received_at`；§5.2 预检改为完整解码 `load()`；§5.3 `issuing_authority` 不得含 8 位以上连续数字；§9 加 `expired`/`missing_field` 两类与 `expected_reason` 列，图片不进 git。D 的 starter 与 E 的脚本已按此实现；B 的 §5.3 和 D 状态机写入 `received_at` 在 A6 联调时完成 |
 | v1.3.1 | 2026-11-10 | A | §3 正式桶名改为 `vericloud-raw-1009-a`（原名留在 C 的个人账号作人脸测试素材，不再要求删除）；同步 §2、§5.1、§5.5、§8 的桶名。各模块代码从 S3 事件或命令行参数读桶名，不用改；只有 C 的 `security/presign.py` 写死了默认桶名，已由 A 代改 |
+| v1.4 | 2026-11-13 | A | 新增 §5.7 前端接口 `vericloud-api`（申请上传地址、查询结果），接入组内前端 `frontend/`；只新增，不改已有字段 |
 
 ---
 
