@@ -1,5 +1,5 @@
 #!/bin/bash
-# Frontend backend: deploy lambda/api as vericloud-api behind a Lambda function URL,
+# Frontend backend: deploy lambda/api as vericloud-api behind an API Gateway HTTP API,
 # allow browser PUTs on the bucket (S3 CORS), and point frontend/dist/config.js at it.
 #
 # Run in the Learner Lab terminal, from the repo:
@@ -26,47 +26,50 @@ case "$CALLER_ARN" in
     ;;
 esac
 ROLE_ARN="$(aws iam get-role --role-name LabRole --query Role.Arn --output text)"
+ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+
+# Wait until the function is no longer being created/updated. A polling loop instead of
+# `aws lambda wait`, because the Learner Lab CLI is old and lacks some waiters.
+wait_ready() {
+  for _ in $(seq 1 45); do
+    st="$(aws lambda get-function-configuration --function-name "$FN" --region "$REGION"       --query '[State, LastUpdateStatus]' --output text 2>/dev/null || true)"
+    case "$st" in *Pending*|*InProgress*) sleep 2 ;; *) return 0 ;; esac
+  done
+}
 
 # ---------- 1. Lambda function ----------
 ( cd "$HERE/lambda/api" && python3 -c "import zipfile; z=zipfile.ZipFile('$TMP/api.zip','w'); z.write('handler.py'); z.close()" )
 ENV="Variables={BUCKET=$BUCKET,TABLE=$TABLE,URL_TTL=300}"
 if aws lambda get-function --function-name "$FN" --region "$REGION" >/dev/null 2>&1; then
   echo "[1/4] Updating $FN"
+  wait_ready
   aws lambda update-function-code --function-name "$FN" --region "$REGION" --zip-file "fileb://$TMP/api.zip" >/dev/null
-  aws lambda wait function-updated --function-name "$FN" --region "$REGION"
-  aws lambda update-function-configuration --function-name "$FN" --region "$REGION" \
-    --environment "$ENV" --timeout 10 --memory-size 256 >/dev/null
-  aws lambda wait function-updated --function-name "$FN" --region "$REGION"
+  wait_ready
+  aws lambda update-function-configuration --function-name "$FN" --region "$REGION"     --environment "$ENV" --timeout 10 --memory-size 256 >/dev/null
+  wait_ready
 else
   echo "[1/4] Creating $FN"
-  aws lambda create-function --function-name "$FN" --region "$REGION" --runtime python3.12 \
-    --handler handler.lambda_handler --role "$ROLE_ARN" --zip-file "fileb://$TMP/api.zip" \
-    --environment "$ENV" --timeout 10 --memory-size 256 >/dev/null
-  aws lambda wait function-active --function-name "$FN" --region "$REGION"
+  aws lambda create-function --function-name "$FN" --region "$REGION" --runtime python3.12     --handler handler.lambda_handler --role "$ROLE_ARN" --zip-file "fileb://$TMP/api.zip"     --environment "$ENV" --timeout 10 --memory-size 256 >/dev/null
+  wait_ready
 fi
+FN_ARN="arn:aws:lambda:$REGION:$ACCOUNT_ID:function:$FN"
 
-# ---------- 2. Public function URL with CORS ----------
-CORS='{"AllowOrigins":["*"],"AllowMethods":["GET","POST"],"AllowHeaders":["content-type"],"MaxAge":300}'
-if aws lambda get-function-url-config --function-name "$FN" --region "$REGION" >/dev/null 2>&1; then
-  echo "[2/4] Function URL exists; re-applying CORS"
-  aws lambda update-function-url-config --function-name "$FN" --region "$REGION" --cors "$CORS" >/dev/null
+# ---------- 2. Public HTTPS endpoint: API Gateway HTTP API with CORS ----------
+# (Lambda function URLs would be simpler, but the Learner Lab CLI is too old to create them.)
+cat > "$TMP/cors.json" <<'JSON'
+{"AllowOrigins":["*"],"AllowMethods":["GET","POST"],"AllowHeaders":["content-type"],"MaxAge":300}
+JSON
+API_ID="$(aws apigatewayv2 get-apis --region "$REGION" --query "Items[?Name=='$FN'].ApiId | [0]" --output text)"
+if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+  echo "[2/4] HTTP API $FN exists ($API_ID); re-applying CORS"
+  aws apigatewayv2 update-api --api-id "$API_ID" --region "$REGION" --cors-configuration "file://$TMP/cors.json" >/dev/null
 else
-  echo "[2/4] Creating function URL"
-  aws lambda create-function-url-config --function-name "$FN" --region "$REGION" \
-    --auth-type NONE --cors "$CORS" >/dev/null
+  echo "[2/4] Creating HTTP API $FN"
+  # Quick create: one $default route -> the Lambda, $default stage with auto-deploy, payload format 2.0.
+  API_ID="$(aws apigatewayv2 create-api --name "$FN" --region "$REGION" --protocol-type HTTP     --target "$FN_ARN" --cors-configuration "file://$TMP/cors.json" --query ApiId --output text)"
 fi
-# Public URLs need both permissions (the second one is required for URLs created since late 2025).
-aws lambda add-permission --function-name "$FN" --region "$REGION" --statement-id public-url \
-  --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE >/dev/null 2>&1 || true
-if ! aws lambda add-permission --function-name "$FN" --region "$REGION" --statement-id public-url-invoke \
-  --action lambda:InvokeFunction --principal '*' --invoked-via-function-url >/dev/null 2>"$TMP/perm.err"; then
-  grep -q ResourceConflictException "$TMP/perm.err" || {
-    echo "   (note) second permission not added: $(head -c 200 "$TMP/perm.err")"
-    echo "   If the quick check below returns Forbidden, add it in the console:"
-    echo "   Lambda -> $FN -> Configuration -> Permissions -> Resource-based policy -> Add: lambda:InvokeFunction, principal *"
-  }
-fi
-API_URL="$(aws lambda get-function-url-config --function-name "$FN" --region "$REGION" --query FunctionUrl --output text)"
+aws lambda add-permission --function-name "$FN" --region "$REGION" --statement-id apigw-invoke   --action lambda:InvokeFunction --principal apigateway.amazonaws.com   --source-arn "arn:aws:execute-api:$REGION:$ACCOUNT_ID:$API_ID/*" >/dev/null 2>&1 || true
+API_URL="$(aws apigatewayv2 get-api --api-id "$API_ID" --region "$REGION" --query ApiEndpoint --output text)"
 API_URL="${API_URL%/}"
 
 # ---------- 3. Let the browser PUT to the bucket ----------

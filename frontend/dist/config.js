@@ -1,5 +1,5 @@
 // VeriCloud frontend config.
-// infrastructure/setup_api.sh fills in VERICLOUD_API with the vericloud-api function URL.
+// infrastructure/setup_api.sh fills in VERICLOUD_API with the vericloud-api API Gateway URL.
 // Empty = demo mode (no upload, no real check). Never put AWS keys in this file.
 const VERICLOUD_API = '';
 

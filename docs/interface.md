@@ -242,7 +242,7 @@ OCR 失败时，`ocr` 变为：
 | `POST /applications` | `{"application_id", "id_card_extension", "selfie_extension"}`（小写 UUID v4；扩展名 `.jpg`/`.jpeg`/`.png`） | `200 {"application_id", "id_card_url", "selfie_url", "expires_in": 300}`；参数错 `400`；编号已用过 `409` |
 | `GET /applications/<application_id>` | — | 完成：`200 {"review_status", "reason", "processed_at"}`；处理中：`404 {"status": "PENDING"}` |
 
-只返回这三个字段，**不返回**姓名、证件号。前端先 PUT 证件照，再 PUT 自拍（第 2 节）。部署：`infrastructure/setup_api.sh`（Lambda Function URL + S3 CORS）。
+只返回这三个字段，**不返回**姓名、证件号。前端先 PUT 证件照，再 PUT 自拍（第 2 节）。部署：`infrastructure/setup_api.sh`（API Gateway HTTP API + S3 CORS）。
 
 ---
 

@@ -48,7 +48,7 @@ window.VERICLOUD = {
 | `createApplication` | `POST /applications` | 两个 5 分钟有效的 PUT 地址；同一编号已用过返回 409 |
 | `getResult` | `GET /applications/<id>` | 处理中 404（前端继续等）；完成后只返回 `review_status`、`reason`、`processed_at` |
 
-切到真实模式只要在 Learner Lab 终端跑一次（会建函数和 Function URL、给桶加 CORS、把地址写进 `dist/config.js`）：
+切到真实模式只要在 Learner Lab 终端跑一次（会建函数和 API Gateway 地址、给桶加 CORS、把地址写进 `dist/config.js`）：
 
 ```bash
 cd ~/KYC && bash infrastructure/setup_api.sh
@@ -56,4 +56,4 @@ cd ~/KYC && bash infrastructure/setup_api.sh
 
 然后把 `frontend/dist` 整个文件夹拷到演示电脑，双击 `index.html` 即可。`VERICLOUD_API` 为空时自动回到演示模式。
 
-注意：接口没有登录鉴权，只适合课堂演示；Function URL 不要发到群外。端到端能出结果，前提是 A6 已把 OCR、人脸、状态机、表部署到演示账号。
+注意：接口没有登录鉴权，只适合课堂演示；接口地址不要发到群外。端到端能出结果，前提是 A6 已把 OCR、人脸、状态机、表部署到演示账号。

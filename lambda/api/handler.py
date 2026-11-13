@@ -1,6 +1,6 @@
 """vericloud-api — the two browser-facing endpoints the frontend needs.
 
-Served through a Lambda function URL (CORS is configured on the URL, not here).
+Served through an API Gateway HTTP API, payload format 2.0 (CORS is configured on the API, not here).
 
   POST /applications
        body {"application_id", "id_card_extension", "selfie_extension"}
@@ -16,7 +16,7 @@ Served through a Lambda function URL (CORS is configured on the URL, not here).
 
 Environment: BUCKET (vericloud-raw-1009-a), TABLE (vericloud-kyc-table), URL_TTL (300).
 No authentication: acceptable for the class demo only. Anyone with the URL can
-request upload links, so the function URL is not shared outside the team.
+request upload links, so the API URL is not shared outside the team.
 """
 
 import base64
