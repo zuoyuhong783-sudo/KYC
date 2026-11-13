@@ -1,0 +1,88 @@
+% =====================================================================
+%  OWNER: F (YANG Xueli).  Content: LO4 -- alternative architectures and
+%  the justification of the chosen one on security, cost and reliability.
+%
+%  Insert in report/main.tex immediately after
+%      \input{sections/sec3e_data_notify}
+%  (it then becomes Section 3.4). Only A edits main.tex.
+% =====================================================================
+\subsection{Alternative Architectures Considered}\label{sec:alt}
+
+A design that presents only the chosen architecture is an assertion rather than
+an argument. Four options were costed and compared against the same workload ---
+10{,}000 applications per month with a tenfold peak --- before VeriCloud was
+selected. They are the three that a team with this brief would realistically
+consider, plus the build-versus-buy alternative that any bank would ask about.
+
+\begin{table}[htbp]
+  \centering
+  \scriptsize
+  \caption{Architectures considered for the same workload. Cost figures for the
+           two middle columns are indicative; the served columns are modelled in
+           Section~\ref{sec:cost}.}
+  \label{tab:alt}
+  \begin{tabular}{@{}p{2.7cm}p{3.0cm}p{3.0cm}p{3.0cm}p{3.0cm}@{}}
+    \toprule
+     & Provisioned EC2 + RDS & Containerised (ECS) & \textbf{Serverless (chosen)} & Managed KYC service \\
+    \midrule
+    Cost at 10{,}000/month
+      & \$232.48 & $\sim$\$130--200 & \textbf{\$15.80} & \$5{,}000--15{,}000 \\
+    Cost at 100{,}000/month
+      & $\sim$\$240 (flat) & $\sim$\$180--260 & $\sim$\$158 & \$50{,}000--150{,}000 \\
+    Security exposure
+      & guest OS and runtime patched by us & host and runtime patched by us & managed runtime, least-privilege IAM by default & biometric data leaves our boundary \\
+    Failure handling
+      & health checks and autoscaling written by us & orchestrator plus our retry logic & native Retry, Catch and dead-letter queue & defined by the vendor \\
+    Operational burden
+      & high & medium & low & lowest \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Why security favours serverless here.}
+The security argument is about \emph{attack surface}, not about features. With
+provisioned servers the team owns the guest operating system, its patch cycle and
+its network exposure; every week of the project is another week of unpatched
+packages. With containers the host is still ours. With the serverless design the
+runtime is managed, each function executes under a role scoped to the resources
+it actually touches, and the only inbound path is a 300-second presigned URL to a
+private bucket --- there is no server to log into. The managed service scores
+equally well on isolation but moves the biometric data outside the account, which
+under a strict reading of data-minimisation is the largest possible exposure.
+
+\paragraph{Why cost favours serverless.}
+At the modelled workload the provisioned stack costs \$232.48 a month and the
+serverless stack \$15.80 --- a 93.2\% reduction (Section~\ref{sec:cost}). The
+difference is not a discount; it is a change in billing structure. Provisioned
+capacity is paid for continuously and the workload is idle most of the time,
+whereas serverless capacity is paid per invocation and costs nothing between
+campaigns. This advantage is conditional: the sensitivity analysis in
+Section~\ref{sec:cost:sensitivity} shows it narrowing to about 32\% at
+100{,}000 applications per month and disappearing near 150{,}000, where the flat
+cost of fully utilised servers finally beats per-request billing.
+
+\paragraph{Why reliability favours serverless.}
+The reliability primitive that matters here is \emph{isolation of failure}, and
+it is the one that is hardest to build by hand. In the serverless design a
+poisoned message is retried three times and parked in a dead-letter queue; a
+failed face comparison is caught on its own branch while the OCR result survives;
+an uncertain decision degrades to human review rather than to an error. On
+provisioned or containerised infrastructure the same behaviour has to be written,
+tested and maintained by the team --- and a team that is still learning the
+platform is exactly the team least able to maintain it. Serverless also inherits
+multi-availability-zone execution without configuration, whereas the provisioned
+baseline only survives a zone failure if it was deliberately designed to.
+
+\paragraph{Where the rejected options would win.}
+The comparison is only credible if it states its own limits. Provisioned
+infrastructure wins when a bank already owns depreciated hardware, has a
+data-residency obligation that forbids the managed service, or runs sustained
+high volume where reserved capacity is cheaper than per-request billing.
+Containers win when a stage needs a custom runtime, a GPU, or a long-running job
+that exceeds the Lambda execution limit. A managed KYC service wins when there
+is no engineering team to build and operate the pipeline, and when a per-check
+fee of a few dollars is small relative to the engineering it replaces --- a cost
+that this model, which prices infrastructure only, does not capture. VeriCloud
+was selected because this brief is the opposite of all three: a student team with
+no existing infrastructure, a bursty low-to-moderate volume, and a requirement to
+demonstrate the engineering rather than procure it.
