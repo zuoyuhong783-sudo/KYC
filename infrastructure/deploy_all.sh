@@ -161,7 +161,7 @@ fi
 echo "[5/6] vericloud-starter (+ Pillow) and SQS trigger"
 python3 -m pip --version >/dev/null 2>&1 || { echo "!! pip is missing in this terminal: run  python3 -m ensurepip --user  and rerun"; exit 1; }
 python3 -m pip install --quiet --target "$TMP/starter_pkg" --platform manylinux2014_x86_64 \
-  --python-version 3.12 --implementation cp --only-binary=:all: "Pillow>=10,<13"
+  --python-version 3.12 --implementation cp --abi cp312 --only-binary=:all: --ignore-requires-python "Pillow>=10,<13"
 zip_dir "$HERE/lambda/starter" "$TMP/starter.zip" "$TMP/starter_pkg"
 deploy_zip vericloud-starter "$TMP/starter.zip" 60 512 "Variables={STATE_MACHINE_ARN=$SM_ARN}"
 map_source vericloud-starter "arn:aws:sqs:$REGION:$ACCOUNT_ID:$QUEUE"
