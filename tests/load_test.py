@@ -10,11 +10,11 @@
 
 用法：
   # 默认：匀速度，验证稳态吞吐
-  python tests/load_test.py --bucket vericloud-raw-xxxx --count 100 --duration 60 \\
+  python tests/load_test.py --bucket vericloud-raw-1009-a --count 100 --duration 60 \\
       --out results/load_test_r1_submitted.csv
 
   # burst 档：几乎同时打满，观察冷启动与队列堆积（探索实验，不占 E6 的两轮名额）
-  python tests/load_test.py --bucket vericloud-raw-xxxx --count 100 --duration 10 \\
+  python tests/load_test.py --bucket vericloud-raw-1009-a --count 100 --duration 10 \\
       --profile burst --out results/load_test_burst_submitted.csv
 
   # 接 C 的 presign（需暴露 presign_put_url(bucket, key) -> str）

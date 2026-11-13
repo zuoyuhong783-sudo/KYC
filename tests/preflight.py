@@ -10,7 +10,7 @@
   Lambda 运行时 python3.12 + 1024MB + 60s / 状态机 STANDARD
 
 用法：
-  python tests/preflight.py --bucket vericloud-raw-xxxx --table vericloud-kyc-table
+  python tests/preflight.py --bucket vericloud-raw-1009-a --table vericloud-kyc-table
   # M2 之前 Lambda 还没全上，加 --allow-missing-functions
 """
 from __future__ import annotations

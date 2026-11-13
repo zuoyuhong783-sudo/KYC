@@ -2,7 +2,7 @@
 
 **Owner:** E · Li Hengchen ｜ 交付对象：B、C、D、F、A
 **Tasks**（01 方案 §4.5）：E1、E2、E3、E6
-**Contract:** `docs/interface.md` v1.2 §2（上传顺序）、§3（桶 `vericloud-raw-1009-a`（v1.3.1）、5 分钟 URL）与 §9（测试素材）。不要自创字段名或类别名。
+**Contract:** `docs/interface.md` v1.3.1 §2（上传顺序）、§3（桶 `vericloud-raw-1009-a`、5 分钟 URL）、§4/§5.1（`received_at`）与 §9（测试素材）。不要自创字段名或类别名。
 
 首批素材 11-08 ｜ 全量 11-10 ｜ 压测 11-21 ｜ Ch6 11-30
 

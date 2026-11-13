@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | `tests/gen_fixtures.py` | 1012×638 合成证件、GB 11643 合法校验位、区间有效期、SAMPLE 水印、坏文件、SHA256SUMS、`--check` 比脸自检 | 全组唯一造素材入口；保证 B/C/D 用的是同一套图 | **B / C / D**（造图与单测）、**A**（归档） | B/C/D：从共享盘取图后先 `shasum -c SHA256SUMS`；不要自己改脚本参数另造一套 |
 | `tests/load_test.py` | 60 s / 100 申请；uniform 与 burst 两档；坏文件按概率混入；`--presign-module` 接 C 的实现；素材缺失直接 exit 1 | 产出 `results/load_test_rN_submitted.csv`，是全部延迟与调用量数字的唯一来源 | **自己**；**A**（A6 联调可复用）；**C**（提供 presign 函数名）；**F**（要调用量） | C：交付 `security/presign.py` 后告知函数名，E 改 `--presign-func`；F：用 `submitted.csv` 行数算实测成本 |
-| `tests/collect_results.py` | service 与 end-to-end 双口径延迟；DLQ 按 `application_id` 集合比对（`20/20` 式证据）；空样本直接 exit 不再输出 `nan`；导出 LaTeX 表 | 把 DynamoDB + DLQ 变成报告里可核对的数字 | **自己**；**F**（取数）；**A**（数字关抽查） | F：压测后向 E 索取 `summary.csv`，不得自行估算；A：数字关按 `results/` 核对 |
+| `tests/collect_results.py` | ingress / service / end-to-end 三口径延迟；DLQ 按 `application_id` 集合比对；reason 比对；空样本 exit 5；导出 LaTeX 表 | 把 DynamoDB + DLQ 变成报告里可核对的数字 | **自己**；**F**（取数）；**A**（数字关抽查） | F：压测后向 E 索取 `summary.csv`，不得自行估算；A：数字关按 `results/` 核对 |
 | `tests/preflight.py` | 资源存在性 + §9.2 一致关红线：桶四项私有、SSE-S3、生命周期 7 天、`maxReceiveCount=3`、DLQ 14 天、可见性超时、Lambda python3.12/1024MB/60s、状态机 STANDARD | 一条命令替 C/D 抓配置红线；Learner Lab 会话恢复后的自检 | **A / C / D**（联调前）、**自己**（每次压测前） | C/D：看到 ❌ 先修再联调，不要绕过 |
 | `tests/fixtures/manifest.csv` | 27 例、8 类、6 列（含 `expected_reason`，按 v1.3 提案） | 单测与压测的**唯一事实来源** | **B / C / D** | D：Choice 的 `reason` 字符串仍按 §12.3（`face_error`/`similarity_below_80`/`auto_approved`）；FAIL 的 `id_expired`/`ocr_failed` 待 interface 升到 v1.3 后补用例 |
 | `tests/fixtures/README.md` | 目录约定、六类预期、四个设计决定、造图规则、共享盘校验流程 | 素材的"说明书"，防止 B/C/D 各理解一套 | **B / C / D** | 按第 4 节规则造图；`printed` 5 张由 E 提供，不要自行替换 |
@@ -49,7 +49,7 @@
 | **问题 3（需外部确认）** | `\cite{aws2024cloudwatch}` 的 bib 条目还只是文末注释，要 **F** 追加进 `references.bib`，否则编译出 `[?]` |
 | **问题 4（需外部确认）** | `\ref{sec:fault}` 依赖 **D** 在 `sec4_fault_tolerance.tex` 里写 `\label{sec:fault}`，否则出 `??` |
 | **问题 5（必补）** | 表格只有单轮生成器（见 2.2），但 caption 写的是 "two rounds" |
-| 我做了什么 | 指标定义（四族 + 双口径延迟说明）、工作负载与故障注入、testbed 参数、23 例覆盖表、**新增 Alerting 小节与告警表**、结果段改为占位模板、补两条引用 |
+| 我做了什么 | 指标定义（四族 + 三口径延迟说明）、工作负载与故障注入、testbed 参数、27 例覆盖表、**新增 Alerting 小节与告警表**、结果段改为占位模板、补两条引用 |
 | 功能 / 作用 | Ch6 正文，占报告 0.5–1.5 页；E4/E5 的截图与告警策略在这里落地 |
 | 对接给谁 | **A**（统稿，注意 `report/` 目录去留）、**F**（补 bib key）、**D**（补 label） |
 | 怎么改 | 见下方"改法 1" |
@@ -74,7 +74,7 @@ being processed.
 | 项 | 内容 |
 |---|---|
 | **问题** | `--latex` 每次只写单轮单列 `{lr}`，注释里让你"再合并成两列表格"——手工合并 = 手抄数字，直接踩 §9.2 数字关 |
-| 我做了什么 | 双口径延迟、DLQ 逐条比对、LaTeX 导出 |
+| 我做了什么 | 三口径延迟、DLQ 逐条比对、reason 比对、LaTeX 导出 |
 | 作用 | 报告 Table `tab:loadtest` 的唯一来源 |
 | 对接给谁 | **A**（数字关抽查）、**F**（成本取数） |
 | 怎么改 | 加一个 `--merge` 模式（约 25 行），见下 |
