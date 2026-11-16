@@ -3,137 +3,232 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>VeriCloud Live</title>
 <style>
-:root{--ink:#18212f;--soft:#5a6577;--line:#d9dee7;--bg:#f4f6f9;--card:#fff;--navy:#14213d;--blue:#2f5f9e;--ok:#1f7a4d;--okbg:#e5f4ec;--warn:#9a5b00;--warnbg:#fdf1dc;--bad:#b42318;--badbg:#fdeceb;--run:#2f5f9e;--runbg:#e8effa}
+:root{
+  --bg:#0a1120;--bg2:#0e1830;--card:#121c33;--card2:#17223d;--line:rgba(148,163,184,.16);--line2:rgba(148,163,184,.28);
+  --ink:#e8edf7;--soft:#a3adc2;--dim:#6b7690;
+  --brand:#6366f1;--brand2:#06b6d4;--grad:linear-gradient(135deg,#6366f1 0%,#3b82f6 55%,#06b6d4 100%);
+  --ok:#22c55e;--okbg:rgba(34,197,94,.12);--warn:#f59e0b;--warnbg:rgba(245,158,11,.12);--bad:#ef4444;--badbg:rgba(239,68,68,.12);--run:#38bdf8;--runbg:rgba(56,189,248,.12);
+  --r:16px;--shadow:0 1px 0 rgba(255,255,255,.04) inset,0 10px 30px rgba(0,0,0,.35);
+}
 *{box-sizing:border-box}
-body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg)}
-header{background:var(--navy);color:#eef0f4;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-header h1{font-size:20px;margin:0;letter-spacing:.3px}
-header .sub{color:#bfc8d8;font-size:13px}
+html,body{height:100%}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,"Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);
+  background:radial-gradient(1100px 600px at 85% -10%,rgba(99,102,241,.20),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(6,182,212,.12),transparent 60%),var(--bg);background-attachment:fixed}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand2);outline-offset:2px}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:22px;padding:0 28px;height:64px;background:rgba(10,17,32,.78);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:0 4px 14px rgba(99,102,241,.45);flex:none}
+.brand h1{font-size:18px;margin:0;letter-spacing:.2px;white-space:nowrap}
+.brand .sub{font-size:12px;color:var(--soft);white-space:nowrap}
+nav{display:flex;gap:6px;margin-left:18px;height:100%}
+nav button{background:none;border:0;color:var(--soft);padding:0 14px;cursor:pointer;position:relative;font-weight:600;font-size:14.5px}
+nav button:hover{color:var(--ink)}
+nav button.active{color:var(--ink)}
+nav button.active::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--grad)}
 .spacer{flex:1}
-.pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#2a3a5e;color:#cfd8ea}
-.pill.on{background:#1f7a4d;color:#fff}.pill.off{background:#7a2a22;color:#fff}
-nav{display:flex;gap:4px;padding:0 24px;background:var(--navy)}
-nav button{background:none;border:0;color:#bfc8d8;padding:10px 14px;font:inherit;cursor:pointer;border-bottom:3px solid transparent}
-nav button.active{color:#fff;border-bottom-color:#f2a36b}
-main{max-width:1240px;margin:0 auto;padding:20px 24px 48px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
-h2{font-size:16px;margin:0 0 12px}
+.hbtn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.03);font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.hbtn:hover{background:rgba(255,255,255,.07)}
+.pill{cursor:default}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.pill.on{border-color:rgba(34,197,94,.45);color:#bbf7d0}.pill.on i{background:var(--ok);box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+.pill.off{border-color:rgba(239,68,68,.45);color:#fecaca}.pill.off i{background:var(--bad)}
+.lang{display:inline-flex;padding:3px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.03)}
+.lang button{border:0;background:none;padding:0 12px;height:26px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--soft);cursor:pointer}
+.lang button.on{background:var(--grad);color:#fff}
+
+/* ---------- layout ---------- */
+main{flex:1;display:flex;flex-direction:column;width:100%;max-width:1720px;margin:0 auto;padding:18px 28px 20px}
+section.tab{flex:1;display:flex;flex-direction:column}
+.grid{flex:1;display:grid;grid-template-columns:minmax(440px,5fr) 7fr;gap:20px;align-items:stretch}
+.col{display:flex;flex-direction:column;gap:20px;min-width:0}
+@media (max-width:1050px){.grid{grid-template-columns:1fr}header{flex-wrap:wrap;height:auto;padding:10px 16px;gap:10px}nav{margin-left:0}main{padding:16px}}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);position:relative}
+.card.glow::before{content:"";position:absolute;inset:-1px;border-radius:var(--r);padding:1px;background:linear-gradient(135deg,rgba(99,102,241,.55),rgba(6,182,212,.15) 40%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.ch{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ch h2{font-size:17px;margin:0;font-weight:700}
+.num{width:26px;height:26px;border-radius:8px;background:rgba(99,102,241,.18);color:#c7d2fe;font-size:13px;font-weight:800;display:grid;place-items:center;flex:none}
 .muted{color:var(--soft);font-size:13px}
-.grid{display:grid;grid-template-columns:470px 1fr;gap:18px;align-items:start}
-@media (max-width:900px){.grid{grid-template-columns:1fr}}
-.drops{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.drop{border:2px dashed var(--line);border-radius:12px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;padding:8px;background:#fafbfc;position:relative;overflow:hidden}
-.drop.drag{border-color:var(--blue);background:var(--runbg)}
-.drop img{max-width:100%;max-height:110px;border-radius:8px;object-fit:contain}
-.drop b{font-size:14px}.drop small{color:var(--soft);font-size:12px}
+
+/* ---------- upload ---------- */
+.drops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.drop{border:1.5px dashed var(--line2);border-radius:14px;min-height:178px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;cursor:pointer;padding:12px 10px;background:rgba(255,255,255,.02);transition:all .2s;position:relative;overflow:hidden}
+.drop:hover{border-color:rgba(99,102,241,.7);background:rgba(99,102,241,.06)}
+.drop.drag{border-color:var(--brand2);background:var(--runbg)}
+.drop.has{border-style:solid;border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.05)}
 .drop input{display:none}
-label.chk{display:flex;gap:8px;align-items:flex-start;margin:12px 0 0;font-size:13px;color:var(--soft)}
-button.primary{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:var(--blue);color:#fff;font:600 15px system-ui;cursor:pointer}
-button.primary:disabled{background:#9fb0c8;cursor:not-allowed}
-.err{color:var(--bad);font-size:13px;min-height:18px;margin-top:8px}
-.appid{font:12px ui-monospace,Consolas,monospace;color:var(--soft);word-break:break-all}
-/* architecture strip */
-.arch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.svc{border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:600;background:#fafbfc;color:var(--soft);transition:all .3s}
-.svc.run{border-color:var(--run);background:var(--runbg);color:var(--run)}
-.svc.ok{border-color:var(--ok);background:var(--okbg);color:var(--ok)}
-.svc.bad{border-color:var(--bad);background:var(--badbg);color:var(--bad)}
-.arr{color:#aab3c2;font-size:12px}
-/* stages */
+.drop .ic{width:46px;height:46px;border-radius:12px;background:rgba(99,102,241,.14);color:#a5b4fc;display:grid;place-items:center;margin-bottom:4px}
+.drop b{font-size:14.5px}
+.drop small{color:var(--soft);font-size:12px;line-height:1.35}
+.drop .hint{color:var(--dim);font-size:11.5px;margin-top:2px}
+.drop img{max-width:100%;max-height:112px;border-radius:9px;object-fit:contain;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.drop .fname{font-size:11.5px;color:#bbf7d0;word-break:break-all}
+.opt{margin-top:16px;display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:12px;border:1px solid rgba(245,158,11,.28);background:rgba(245,158,11,.06);cursor:pointer}
+.opt .t1{font-weight:700;font-size:14px;color:#fde68a}
+.opt .t2{font-size:12.5px;color:var(--soft);margin-top:2px}
+.switch{appearance:none;-webkit-appearance:none;flex:none;width:42px;height:24px;border-radius:999px;background:#334155;position:relative;cursor:pointer;margin:2px 0 0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch:checked{background:var(--warn)}.switch:checked::after{transform:translateX(18px)}
+label.chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:13px;color:var(--soft);cursor:pointer}
+label.chk input{width:17px;height:17px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+button.primary{width:100%;margin-top:18px;height:50px;border:0;border-radius:12px;background:var(--grad);color:#fff;font-weight:700;font-size:16px;letter-spacing:.2px;cursor:pointer;box-shadow:0 8px 24px rgba(59,130,246,.35);transition:transform .15s,box-shadow .15s,filter .15s;display:flex;align-items:center;justify-content:center;gap:10px}
+button.primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 30px rgba(59,130,246,.5);filter:brightness(1.08)}
+button.primary:disabled{background:#26324d;color:#7c879e;box-shadow:none;cursor:not-allowed}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+/* after submit: upload card shrinks so the result fits on one screen */
+.upcard.compact .drop{min-height:92px;padding:8px;gap:3px}
+.upcard.compact .drop img{max-height:56px}
+.upcard.compact .drop .ic,.upcard.compact .drop small,.upcard.compact .drop .hint,.upcard.compact .opt,.upcard.compact label.chk{display:none}
+.upcard.compact button.primary{margin-top:12px;height:44px}
+.err{color:#fca5a5;font-size:13px;min-height:18px;margin-top:10px}
+.appid{font:12px ui-monospace,Consolas,monospace;color:var(--dim);word-break:break-all}
+
+/* ---------- result ---------- */
+.rescard{flex:1;display:flex;flex-direction:column}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--dim);border:1px dashed var(--line);border-radius:12px;padding:24px;min-height:140px}
+.empty svg{opacity:.6}
+.result{display:none;border-radius:14px;padding:14px 16px;border:1px solid var(--line)}
+.result.PASS{background:var(--okbg);border-color:rgba(34,197,94,.35)}
+.result.NEEDS_HUMAN_REVIEW{background:var(--warnbg);border-color:rgba(245,158,11,.35)}
+.result.FAIL{background:var(--badbg);border-color:rgba(239,68,68,.35)}
+.verdict{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800}
+.verdict .vi{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:22px;color:#fff}
+.PASS .verdict{color:#86efac}.PASS .vi{background:var(--ok)}
+.NEEDS_HUMAN_REVIEW .verdict{color:#fcd34d}.NEEDS_HUMAN_REVIEW .vi{background:var(--warn)}
+.FAIL .verdict{color:#fca5a5}.FAIL .vi{background:var(--bad)}
+.why{margin-top:4px;color:var(--ink);font-size:14px}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.kv>div{background:rgba(10,17,32,.55);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0}
+.kv strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv>div>span{display:block;font-size:12px;color:var(--soft)}.kv strong{font-size:15px}
+.simbar{position:relative;height:10px;background:rgba(255,255,255,.08);border-radius:6px;margin-top:8px}
+.simbar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.simbar em{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.lat{display:flex;height:28px;border-radius:8px;overflow:hidden;margin-top:8px;font-size:12px;color:#fff;font-weight:700}
+.lat div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;padding:0 8px}
+
+/* ---------- pipeline ---------- */
+.pipe{display:flex;flex-direction:column}
+.timer{margin-left:auto;font:600 14px ui-monospace,Consolas,monospace;color:var(--soft);display:flex;align-items:center;gap:10px}
+.timer b{color:var(--ink);font-size:16px}
+.prog{height:4px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;margin:-4px 0 14px}
+.prog i{display:block;height:100%;width:0;background:var(--grad);transition:width .5s}
+.arch{display:grid;grid-template-columns:repeat(8,1fr);gap:0;margin-bottom:14px;padding:12px 8px 10px;border-radius:14px;background:rgba(10,17,32,.45);border:1px solid var(--line)}
+.svc{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;text-align:center}
+.svc+.svc::before{content:"";position:absolute;top:21px;right:calc(50% + 26px);width:calc(100% - 52px);height:2px;background:var(--line2);border-radius:2px}
+.svc.ok::before,.svc.run::before,.svc.bad::before{background:linear-gradient(90deg,var(--ok),currentColor)}
+.svc .si{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1.5px solid var(--line2);color:var(--dim);transition:all .3s;font-weight:800;font-size:18px}
+.svc span{font-size:11.5px;font-weight:600;color:var(--dim);line-height:1.25;transition:color .3s}
+.svc.run{color:var(--run)}.svc.run .si{border-color:var(--run);background:var(--runbg);color:var(--run);animation:glow 1.2s ease-in-out infinite}.svc.run span{color:var(--run)}
+.svc.ok{color:var(--ok)}.svc.ok .si{border-color:var(--ok);background:var(--okbg);color:var(--ok)}.svc.ok span{color:var(--ink)}
+.svc.bad{color:var(--bad)}.svc.bad .si{border-color:var(--bad);background:var(--badbg);color:var(--bad)}.svc.bad span{color:#fca5a5}
+@keyframes glow{50%{box-shadow:0 0 0 6px var(--runbg)}}
+.groups{flex:1;display:flex;flex-direction:column;gap:8px}
+.grp{border:1px solid var(--line);border-radius:14px;padding:4px 14px 2px;background:rgba(10,17,32,.25)}
+.grp h3{margin:5px 0 0;font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);font-weight:800}
 ol.stages{list-style:none;margin:0;padding:0}
-ol.stages li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;padding:9px 0;border-top:1px solid #eef1f5;align-items:start}
+ol.stages li{display:grid;grid-template-columns:30px 1fr auto;gap:12px;padding:6px 0;border-top:1px solid var(--line);align-items:start;transition:opacity .3s}
 ol.stages li:first-child{border-top:0}
-.dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--soft);background:#fff}
-li.run .dot{border-color:var(--run);color:var(--run);animation:pulse 1.2s ease-in-out infinite}
+ol.stages li.idle{opacity:.55}
+.dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--dim);background:var(--bg2)}
+li.run .dot{border-color:var(--run);color:var(--run);animation:glow 1.2s ease-in-out infinite}
 li.ok .dot{border-color:var(--ok);background:var(--ok);color:#fff}
 li.bad .dot{border-color:var(--bad);background:var(--bad);color:#fff}
 li.warn .dot{border-color:var(--warn);background:var(--warn);color:#fff}
-@keyframes pulse{50%{box-shadow:0 0 0 5px var(--runbg)}}
-.st b{font-size:14px}.st div{font-size:12.5px;color:var(--soft)}
-.t{font:12px ui-monospace,Consolas,monospace;color:var(--soft);text-align:right;white-space:nowrap}
-/* result */
-.result{margin-top:16px;border-radius:14px;padding:18px;display:none}
-.result.PASS{background:var(--okbg);border:1px solid #b9e0cb}
-.result.NEEDS_HUMAN_REVIEW{background:var(--warnbg);border:1px solid #f0d29c}
-.result.FAIL{background:var(--badbg);border:1px solid #f3c1bc}
-.verdict{font-size:24px;font-weight:700}
-.PASS .verdict{color:var(--ok)}.NEEDS_HUMAN_REVIEW .verdict{color:var(--warn)}.FAIL .verdict{color:var(--bad)}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
-.kv>div{background:rgba(255,255,255,.7);border-radius:10px;padding:10px}
-.kv>div>span{display:block;font-size:12px;color:var(--soft)}.kv strong{font-size:15px}
-.simbar{position:relative;height:12px;background:#e6e9ef;border-radius:6px;margin-top:6px;overflow:visible}
-.simbar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--blue)}
-.simbar em{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
-.lat{display:flex;height:26px;border-radius:8px;overflow:hidden;margin-top:6px;font-size:11.5px;color:#fff;font-weight:600}
-.lat div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;padding:0 6px}
-/* ops */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
-.stat span{font-size:12px;color:var(--soft)}.stat strong{display:block;font-size:28px;margin-top:2px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eef1f5}
-th{color:var(--soft);font-weight:600;font-size:12px}
-.tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px}
-.tag.PASS{background:var(--okbg);color:var(--ok)}.tag.NEEDS_HUMAN_REVIEW{background:var(--warnbg);color:var(--warn)}.tag.FAIL{background:var(--badbg);color:var(--bad)}
+.st b{font-size:14.5px;font-weight:650;line-height:1.35}.st div{font-size:12.5px;color:var(--soft);line-height:1.35}
+li.bad .st div{color:#fca5a5}
+.t{font:12px ui-monospace,Consolas,monospace;color:var(--soft);text-align:right;white-space:nowrap;padding-top:3px}
+
+/* ---------- ops ---------- */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:22px}
+@media (max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);border-top:3px solid var(--line2)}
+.stat span{font-size:12.5px;color:var(--soft)}.stat strong{display:block;font-size:34px;margin-top:4px;font-weight:800}
+.tablecard{flex:1}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+.tag{font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.tag.PASS{background:var(--okbg);color:#86efac}.tag.NEEDS_HUMAN_REVIEW{background:var(--warnbg);color:#fcd34d}.tag.FAIL{background:var(--badbg);color:#fca5a5}
 .hidden{display:none!important}
-dialog{border:0;border-radius:14px;padding:20px;max-width:520px;width:92%}
-dialog input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:13px ui-monospace,Consolas,monospace}
-.row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-.row button{padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit}
-.row button.go{background:var(--blue);color:#fff;border-color:var(--blue)}
-.linkbtn{background:none;border:1px solid #3c4d73;color:#cfd8ea;border-radius:8px;padding:5px 10px;font:12px system-ui;cursor:pointer}
+
+/* ---------- dialog ---------- */
+dialog{border:1px solid var(--line2);border-radius:16px;padding:24px;max-width:540px;width:92%;background:var(--card2);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(5,10,20,.7);backdrop-filter:blur(3px)}
+dialog h2{margin:0 0 6px;font-size:18px}
+dialog input{width:100%;padding:11px 12px;border:1px solid var(--line2);border-radius:10px;font:13px ui-monospace,Consolas,monospace;background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.row button{height:38px;padding:0 18px;border-radius:10px;border:1px solid var(--line2);background:transparent;cursor:pointer;font-weight:600}
+.row button.go{background:var(--grad);border:0;color:#fff}
+code{font:12px ui-monospace,Consolas,monospace;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:5px}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>VeriCloud Live</h1><div class="sub">Serverless KYC on AWS · team SkyFin</div></div>
+  <div class="brand">
+    <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></div>
+    <div><h1>VeriCloud Live</h1><div class="sub" data-i18n="sub"></div></div>
+  </div>
+  <nav><button class="active" data-tab="verify" data-i18n="tabVerify"></button><button data-tab="ops" data-i18n="tabOps"></button></nav>
   <div class="spacer"></div>
-  <span id="conn" class="pill">API not set</span>
-  <button class="linkbtn" id="setApi">API settings</button>
+  <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="zh">中文</button></div>
+  <span id="conn" class="hbtn pill"><i></i><span id="connTxt"></span></span>
+  <button class="hbtn" id="setApi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-i18n="apiSettings"></span></button>
 </header>
-<nav><button class="active" data-tab="verify">Verify an applicant</button><button data-tab="ops">Operations</button></nav>
 
 <main>
-<section id="tab-verify">
+<section id="tab-verify" class="tab">
   <div class="grid">
-    <div class="card">
-      <h2>1 · Upload documents</h2>
-      <div class="drops">
-        <label class="drop" id="dropId"><input type="file" accept=".jpg,.jpeg,.png" id="fileId"><b>ID card · front</b><small>name, number, photo</small></label>
-        <label class="drop" id="dropBack"><input type="file" accept=".jpg,.jpeg,.png" id="fileBack"><b>ID card · back</b><small>issuing authority, validity</small></label>
-        <label class="drop" id="dropSelfie"><input type="file" accept=".jpg,.jpeg,.png" id="fileSelfie"><b>Selfie</b><small>JPG / PNG, click or drop</small></label>
+    <div class="col">
+      <div class="card upcard" id="upcard">
+        <div class="ch"><span class="num">1</span><h2 data-i18n="upTitle"></h2></div>
+        <div class="drops">
+          <label class="drop" id="dropId"><input type="file" accept=".jpg,.jpeg,.png" id="fileId"></label>
+          <label class="drop" id="dropBack"><input type="file" accept=".jpg,.jpeg,.png" id="fileBack"></label>
+          <label class="drop" id="dropSelfie"><input type="file" accept=".jpg,.jpeg,.png" id="fileSelfie"></label>
+        </div>
+        <label class="opt"><input type="checkbox" class="switch" id="corrupt" role="switch"><span><div class="t1" data-i18n="faultTitle"></div><div class="t2" data-i18n="faultDesc"></div></span></label>
+        <label class="chk"><input type="checkbox" id="consent"><span data-i18n="consent"></span></label>
+        <button class="primary" id="submit" disabled></button>
+        <div class="err" id="err"></div>
+        <div class="appid" id="appid"></div>
       </div>
-      <label class="chk"><input type="checkbox" id="corrupt"> <span><b>Fault demo:</b> upload a truncated (corrupted) selfie to show pre-check rejection, SQS retries and the dead-letter queue</span></label>
-      <label class="chk"><input type="checkbox" id="consent"> <span>The photos are my own or synthetic test samples, used only for this demo.</span></label>
-      <button class="primary" id="submit" disabled>Submit for verification</button>
-      <div class="err" id="err"></div>
-      <div class="appid" id="appid"></div>
+      <div class="card rescard">
+        <div class="ch"><span class="num">3</span><h2 data-i18n="resTitle"></h2></div>
+        <div class="empty" id="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M12 8v5M12 16h.01"/></svg><span data-i18n="resEmpty"></span></div>
+        <div class="result" id="result"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>2 · Live pipeline</h2>
+    <div class="card pipe glow">
+      <div class="ch"><span class="num">2</span><h2 data-i18n="pipeTitle"></h2><div class="timer"><span data-i18n="elapsed"></span><b id="timer">00:00.0</b></div></div>
+      <div class="prog"><i id="prog"></i></div>
       <div class="arch" id="arch"></div>
-      <ol class="stages" id="stages"></ol>
-      <div class="result" id="result"></div>
+      <div class="groups" id="groups"></div>
     </div>
   </div>
 </section>
 
-<section id="tab-ops" class="hidden">
+<section id="tab-ops" class="tab hidden">
   <div class="stats" id="stats"></div>
-  <div class="card"><h2>Latest applications <span class="muted" id="opsTime"></span></h2>
-    <table><thead><tr><th>Application</th><th>Status</th><th>Reason</th><th>Similarity</th><th>Queue + start</th><th>Workflow</th><th>Processed (UTC)</th></tr></thead><tbody id="recent"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody></table>
+  <div class="card tablecard"><div class="ch"><h2 data-i18n="latest"></h2><span class="muted" id="opsTime"></span></div>
+    <table><thead><tr><th data-i18n="thApp"></th><th data-i18n="thStatus"></th><th data-i18n="thReason"></th><th data-i18n="thSim"></th><th data-i18n="thQueue"></th><th data-i18n="thWf"></th><th data-i18n="thProc"></th></tr></thead><tbody id="recent"><tr><td colspan="7" class="muted" data-i18n="loading"></td></tr></tbody></table>
   </div>
 </section>
 </main>
 
 <dialog id="apiDlg">
-  <h2>Backend API address</h2>
-  <p class="muted">The <code>API URL</code> printed by <code>infrastructure/setup_api.sh</code>, e.g. https://xxxx.execute-api.us-east-1.amazonaws.com. Stored only in this browser. Never paste AWS keys here.</p>
+  <h2 data-i18n="dlgTitle"></h2>
+  <p class="muted" data-i18n-html="dlgDesc"></p>
   <input id="apiInput" placeholder="https://….execute-api.us-east-1.amazonaws.com">
-  <div class="row"><button id="apiCancel">Cancel</button><button class="go" id="apiSave">Save</button></div>
+  <div class="row"><button id="apiCancel" data-i18n="cancel"></button><button class="go" id="apiSave" data-i18n="save"></button></div>
 </dialog>
 
 <script>
@@ -142,19 +237,112 @@ const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const store = { get(k){try{return localStorage.getItem(k)}catch{return null}}, set(k,v){try{localStorage.setItem(k,v)}catch{}} };
 
+// ---------- i18n ----------
+const I18N = {
+  en: {
+    sub:'Serverless KYC on AWS · team SkyFin', tabVerify:'Verify an applicant', tabOps:'Operations', apiSettings:'API settings',
+    connNone:'API not set', connOk:'Connected to AWS', connErr:'API error {s}', connDown:'API unreachable',
+    upTitle:'Upload documents', front:'ID card · front', frontD:'name, number, photo', back:'ID card · back', backD:'issuing authority, validity', selfie:'Selfie', selfieD:'a clear photo of the face', dropHint:'Click or drop JPG / PNG',
+    faultTitle:'Fault demo', faultDesc:'Upload a truncated selfie: the pre-check rejects it, SQS retries 3 times, then the dead-letter queue keeps it.',
+    consent:'The photos are my own or synthetic test samples, used only for this demo.', submit:'Submit for verification', verifying:'Verifying…', appId:'Application ID: {id}',
+    resTitle:'Result', resEmpty:'Upload the three images and submit. The decision appears here.',
+    pipeTitle:'Live pipeline', elapsed:'elapsed', gUpload:'Upload', gProcess:'Processing', gResult:'Result',
+    sv_s3:'S3', sv_sqs:'SQS', sv_starter:'Starter λ', sv_ocr:'OCR λ', sv_face:'Rekognition λ', sv_sfn:'Step Functions', sv_ddb:'DynamoDB', sv_sns:'SNS email',
+    s_links:'Upload links issued', d_links:'API returns three presigned PUT URLs, valid 5 min',
+    s_idcard:'ID card front + back uploaded to S3', d_idcard:'raw/id-card-front/, raw/id-card-back/ · private bucket, SSE-S3',
+    s_selfie:'Selfie uploaded → S3 event', d_selfie:'raw/selfie/ upload is the trigger',
+    s_start:'Queued in SQS, pre-check passed', d_start:'starter decodes all three images, joins front + back, starts the workflow',
+    s_ocr:'OCR reads the ID card', d_ocr:'vericloud-ocr (RapidOCR container)',
+    s_face:'Face comparison', d_face:'vericloud-face · Rekognition CompareFaces',
+    s_decide:'Decision rules', d_decide:'5 ordered rules, first match wins',
+    s_save:'Saved to DynamoDB', d_save:'one row per application',
+    s_notify:'Result email via SNS', d_notify:'DynamoDB Stream → notify λ → SNS',
+    frontBack:'front + back', truncated:' · truncated on purpose',
+    rejected:'Rejected at pre-check: no workflow started. SQS will retry the message 3 times, then park it in the dead-letter queue for 14 days. No row, no email.',
+    waitStarter:'waiting for SQS → starter …', joined:'front + back joined into {p}/ · ', received:'starter received it at {t} · execution {s}', execOnly:'execution {s}',
+    lOcr:'OCR', lFace:'Face comparison', bFail:'{l} failed — caught, the workflow continues', bDone:'{l} finished in {s} s', bRun:'{l} running…',
+    notifyNote:'Row written → DynamoDB Stream → vericloud-notify → SNS email to the subscribed address',
+    PASS:'PASS · auto-approved', NEEDS_HUMAN_REVIEW:'NEEDS HUMAN REVIEW', FAIL:'FAIL · rejected',
+    r_auto_approved:'Document valid and face matched (≥ 80)', r_id_expired:'ID card has expired (rule 2)', r_ocr_failed:'ID card could not be read (rule 1)', r_face_error:'No usable face found (rule 3)', r_similarity_below_80:'Face similarity below 80 (rule 4)',
+    kName:'Name (masked)', kId:'ID number (masked)', kExp:'Expiry', longTerm:'Long-term', valid:'valid', expired:'expired', kAuth:'Issuing authority', kOcr:'OCR', noFields:'No fields extracted', kSim:'Face similarity (pass ≥ 80)',
+    latTitle:'Latency: upload → queue → starter ({q} s) · workflow → saved ({w} s)', latQ:'queue + start {q} s', latW:'OCR ∥ face + decision {w} s',
+    eType:'Only .jpg, .jpeg or .png', eSize:'Each image must be 1 byte – 10 MB', eApi:'Set the API address first (API settings, top right).', eCreate:'Could not create the application ({s})',
+    eBack:'This API does not accept an ID back side yet: rerun infrastructure/setup_api.sh', ePut:'Upload failed ({s}). Check S3 CORS (setup_api.sh step 3).',
+    oPass:'Passed', oReview:'Needs human review', oFail:'Failed', oRun:'Running workflows', oQueue:'Queue: waiting / retrying', oDlq:'Dead-letter queue',
+    latest:'Latest applications', thApp:'Application', thStatus:'Status', thReason:'Reason', thSim:'Similarity', thQueue:'Queue + start', thWf:'Workflow', thProc:'Processed (UTC)',
+    loading:'Loading…', noApps:'No applications yet.', refreshed:'· refreshed {t}',
+    dlgTitle:'Backend API address', dlgDesc:'The <code>API URL</code> printed by <code>infrastructure/setup_api.sh</code>, e.g. https://xxxx.execute-api.us-east-1.amazonaws.com. Stored only in this browser. Never paste AWS keys here.',
+    cancel:'Cancel', save:'Save',
+  },
+  zh: {
+    sub:'基于 AWS 的无服务器 KYC 身份核验 · SkyFin 小组', tabVerify:'申请人核验', tabOps:'运维监控', apiSettings:'API 设置',
+    connNone:'未设置 API', connOk:'已连接 AWS', connErr:'API 错误 {s}', connDown:'无法连接 API',
+    upTitle:'上传材料', front:'身份证 · 正面', frontD:'姓名、号码、人像', back:'身份证 · 反面', backD:'签发机关、有效期限', selfie:'自拍', selfieD:'清晰的本人正脸照片', dropHint:'点击或拖入 JPG / PNG',
+    faultTitle:'故障演示', faultDesc:'上传被截断的自拍：预检拒收，SQS 重试 3 次，然后转入死信队列保存。',
+    consent:'照片为本人或合成测试样本，仅用于本次演示。', submit:'提交核验', verifying:'核验中…', appId:'申请编号：{id}',
+    resTitle:'核验结果', resEmpty:'上传三张图片并提交，核验结果会显示在这里。',
+    pipeTitle:'实时流水线', elapsed:'已用时', gUpload:'上传', gProcess:'处理', gResult:'结果',
+    sv_s3:'S3', sv_sqs:'SQS', sv_starter:'Starter λ', sv_ocr:'OCR λ', sv_face:'Rekognition λ', sv_sfn:'Step Functions', sv_ddb:'DynamoDB', sv_sns:'SNS 邮件',
+    s_links:'签发上传链接', d_links:'API 返回三个预签名上传链接，5 分钟内有效',
+    s_idcard:'身份证正反面上传到 S3', d_idcard:'raw/id-card-front/、raw/id-card-back/ · 私有桶，SSE-S3 加密',
+    s_selfie:'自拍上传 → 触发 S3 事件', d_selfie:'自拍上传完成即触发流水线',
+    s_start:'进入 SQS 队列，通过预检', d_start:'starter 完整解码三张图，拼接正反面，启动工作流',
+    s_ocr:'OCR 识别身份证', d_ocr:'vericloud-ocr（RapidOCR 容器镜像）',
+    s_face:'人脸比对', d_face:'vericloud-face · Rekognition CompareFaces',
+    s_decide:'决策规则', d_decide:'5 条有序规则，命中第一条即定',
+    s_save:'写入 DynamoDB', d_save:'每个申请一行记录',
+    s_notify:'SNS 发送结果邮件', d_notify:'DynamoDB Stream → notify λ → SNS',
+    frontBack:'正面 + 反面', truncated:' · 已故意截断',
+    rejected:'预检拒收：未启动工作流。SQS 会重试 3 次，然后把消息转入死信队列保存 14 天。不写表，不发邮件。',
+    waitStarter:'等待 SQS → starter …', joined:'正反面已拼接到 {p}/ · ', received:'starter 于 {t} 接收 · 执行状态 {s}', execOnly:'执行状态 {s}',
+    lOcr:'OCR', lFace:'人脸比对', bFail:'{l}失败 —— 已捕获，工作流继续', bDone:'{l}完成，用时 {s} 秒', bRun:'{l}运行中…',
+    notifyNote:'写表 → DynamoDB Stream → vericloud-notify → SNS 邮件发送到订阅邮箱',
+    PASS:'通过 · 自动批准', NEEDS_HUMAN_REVIEW:'需人工复核', FAIL:'不通过 · 拒绝',
+    r_auto_approved:'证件有效且人脸匹配（≥ 80）', r_id_expired:'身份证已过期（规则 2）', r_ocr_failed:'无法识别身份证（规则 1）', r_face_error:'未检测到可用人脸（规则 3）', r_similarity_below_80:'人脸相似度低于 80（规则 4）',
+    kName:'姓名（脱敏）', kId:'证件号（脱敏）', kExp:'有效期至', longTerm:'长期', valid:'有效', expired:'已过期', kAuth:'签发机关', kOcr:'OCR', noFields:'未提取到字段', kSim:'人脸相似度（≥ 80 通过）',
+    latTitle:'耗时：上传 → 队列 → starter（{q} 秒）· 工作流 → 写表（{w} 秒）', latQ:'排队 + 启动 {q} 秒', latW:'OCR ∥ 人脸 + 决策 {w} 秒',
+    eType:'仅支持 .jpg、.jpeg、.png', eSize:'每张图片须在 1 字节到 10 MB 之间', eApi:'请先设置 API 地址（右上角「API 设置」）。', eCreate:'无法创建申请（{s}）',
+    eBack:'当前 API 还不支持身份证反面：请重新运行 infrastructure/setup_api.sh', ePut:'上传失败（{s}）。请检查 S3 CORS（setup_api.sh 第 3 步）。',
+    oPass:'通过', oReview:'需人工复核', oFail:'不通过', oRun:'运行中的工作流', oQueue:'队列：等待 / 重试中', oDlq:'死信队列',
+    latest:'最近申请', thApp:'申请', thStatus:'状态', thReason:'原因', thSim:'相似度', thQueue:'排队 + 启动', thWf:'工作流', thProc:'处理时间（UTC）',
+    loading:'加载中…', noApps:'暂无申请。', refreshed:'· 刷新于 {t}',
+    dlgTitle:'后端 API 地址', dlgDesc:'即 <code>infrastructure/setup_api.sh</code> 输出的 <code>API URL</code>，例如 https://xxxx.execute-api.us-east-1.amazonaws.com。只保存在本浏览器里。不要在这里粘贴 AWS 密钥。',
+    cancel:'取消', save:'保存',
+  },
+};
+let LANG = (new URLSearchParams(location.search).get('lang') || store.get('vericloud_lang') || 'en') === 'zh' ? 'zh' : 'en';
+const t = (k, p={}) => (I18N[LANG][k] ?? I18N.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => p[x] ?? '');
+
+// ---------- icons ----------
+const SVG = (d, s=22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON = {
+  front: SVG('<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="16" cy="11" r="2.2"/><path d="M13 16c.6-1.3 1.7-2 3-2s2.4.7 3 2M6 9.5h4.5M6 12.5h4.5M6 15.5h3"/>'),
+  back: SVG('<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="7.5" cy="10" r="2.2"/><path d="M11.5 9h7M6 15h12.5M6 12.8h0"/>'),
+  selfie: SVG('<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="10.5" r="2.8"/><path d="M7.5 17c.9-1.8 2.6-2.8 4.5-2.8s3.6 1 4.5 2.8"/>'),
+  s3: SVG('<ellipse cx="12" cy="6" rx="7.5" ry="2.5"/><path d="M4.5 6l1.6 12.2c.2 1.2 2.8 2.3 5.9 2.3s5.7-1.1 5.9-2.3L19.5 6"/>', 20),
+  sqs: SVG('<rect x="3" y="4" width="18" height="4.5" rx="1.2"/><rect x="3" y="10" width="18" height="4.5" rx="1.2"/><rect x="3" y="16" width="12" height="4" rx="1.2"/>', 20),
+  lambda: '<span style="font:800 21px Georgia,serif">λ</span>',
+  face: SVG('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>', 20),
+  sfn: SVG('<circle cx="6" cy="5.5" r="2"/><circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7.5v9M8 5.5c5 0 4 6.5 8 6.5M8 18.5c5 0 4-6.5 8-6.5"/>', 20),
+  ddb: SVG('<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>', 20),
+  sns: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6l8.5 7 8.5-7"/>', 20),
+};
+
 // ---------- API address: ?api=… > config.js > saved ----------
 let API = (new URLSearchParams(location.search).get('api') || window.VERICLOUD_API || store.get('vericloud_api') || '').replace(/\/+$/,'');
 async function api(path, opts={}) {
-  if (!API) throw new Error('Set the API address first (API settings, top right).');
+  if (!API) throw new Error(t('eApi'));
   const r = await fetch(API + path, {...opts, signal: AbortSignal.timeout(15000)});
   const body = await r.json().catch(() => ({}));
   return {status: r.status, body};
 }
+let connState = {k:'connNone'};
+function drawConn() { $('conn').className = 'hbtn pill ' + (connState.cls || ''); $('connTxt').textContent = t(connState.k, connState.p); }
 async function checkConn() {
-  const p = $('conn');
-  if (!API) { p.className = 'pill'; p.textContent = 'API not set'; return; }
-  try { const {status} = await api('/dashboard'); p.className = 'pill ' + (status === 200 ? 'on' : 'off'); p.textContent = status === 200 ? 'Connected to AWS' : 'API error ' + status; }
-  catch { p.className = 'pill off'; p.textContent = 'API unreachable'; }
+  if (!API) connState = {k:'connNone'};
+  else try { const {status} = await api('/dashboard'); connState = status === 200 ? {k:'connOk', cls:'on'} : {k:'connErr', cls:'off', p:{s:status}}; }
+  catch { connState = {k:'connDown', cls:'off'}; }
+  drawConn();
 }
 $('setApi').onclick = () => { $('apiInput').value = API; $('apiDlg').showModal(); };
 $('apiCancel').onclick = () => $('apiDlg').close();
@@ -170,18 +358,29 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
 
 // ---------- file selection ----------
 const files = {id: null, back: null, selfie: null};
+const DROPS = [['id','dropId','fileId','front','frontD'], ['back','dropBack','fileBack','back','backD'], ['selfie','dropSelfie','fileSelfie','selfie','selfieD']];
+const previews = {};
+function drawDrop(kind) {
+  const [, dropId, , iconK, descK] = DROPS.find(d => d[0] === kind), drop = $(dropId), f = files[kind];
+  [...drop.childNodes].forEach(n => { if (n.tagName !== 'INPUT') n.remove(); });
+  drop.classList.toggle('has', !!f);
+  const box = document.createElement('div'); box.style.display = 'contents';
+  if (f) box.innerHTML = `<img alt="${t(iconK)}" src="${previews[kind]}"><b>${t(iconK)}</b><span class="fname">${esc(f.name)} · ${(f.size/1024).toFixed(0)} KB</span>`;
+  else box.innerHTML = `<div class="ic">${ICON[iconK]}</div><b>${t(iconK)}</b><small>${t(descK)}</small><span class="hint">${t('dropHint')}</span>`;
+  drop.append(box);
+}
+let lastErr = null;
+function showErr(k, p) { lastErr = k ? {k, p} : null; $('err').textContent = k ? t(k, p) : ''; }
 function pick(kind, file) {
   if (!file) return;
-  if (!/\.(jpe?g|png)$/i.test(file.name)) { $('err').textContent = 'Only .jpg, .jpeg or .png'; return; }
-  if (!file.size || file.size > 10 * 1024 * 1024) { $('err').textContent = 'Each image must be 1 byte – 10 MB'; return; }
-  files[kind] = file; $('err').textContent = '';
-  const drop = {id: $('dropId'), back: $('dropBack'), selfie: $('dropSelfie')}[kind];
-  const img = new Image(); img.alt = {id: 'ID card front preview', back: 'ID card back preview', selfie: 'Selfie preview'}[kind]; img.src = URL.createObjectURL(file);
-  [...drop.childNodes].forEach(n => { if (n.tagName !== 'INPUT') n.remove(); });
-  const s = document.createElement('small'); s.textContent = file.name + ' · ' + (file.size/1024).toFixed(0) + ' KB';
-  drop.append(img, s); ready();
+  if (!/\.(jpe?g|png)$/i.test(file.name)) return showErr('eType');
+  if (!file.size || file.size > 10 * 1024 * 1024) return showErr('eSize');
+  files[kind] = file; showErr(null); $('upcard').classList.remove('compact');
+  if (previews[kind]) URL.revokeObjectURL(previews[kind]);
+  previews[kind] = URL.createObjectURL(file);
+  drawDrop(kind); ready();
 }
-for (const [kind, dropId, inputId] of [['id','dropId','fileId'], ['back','dropBack','fileBack'], ['selfie','dropSelfie','fileSelfie']]) {
+for (const [kind, dropId, inputId] of DROPS) {
   const drop = $(dropId);
   $(inputId).onchange = e => pick(kind, e.target.files[0]);
   ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
@@ -189,72 +388,72 @@ for (const [kind, dropId, inputId] of [['id','dropId','fileId'], ['back','dropBa
   drop.addEventListener('drop', e => pick(kind, e.dataTransfer.files[0]));
 }
 let busy = false;
-const ready = () => { $('submit').disabled = busy || !files.id || !files.back || !files.selfie || !$('consent').checked; };
+function ready() {
+  const b = $('submit');
+  b.disabled = busy || !files.id || !files.back || !files.selfie || !$('consent').checked;
+  b.innerHTML = busy ? `<span class="spin"></span>${t('verifying')}` : t('submit');
+}
 $('consent').onchange = ready;
+$('upcard').addEventListener('click', e => { if (!busy && e.target.closest('.drops')) $('upcard').classList.remove('compact'); });
 
 // ---------- pipeline model ----------
-const ARCH = [['s3','S3'],['sqs','SQS'],['starter','Starter λ'],['ocr','OCR λ'],['face','Rekognition λ'],['sfn','Step Functions'],['ddb','DynamoDB'],['sns','SNS email']];
-const STAGES = [
-  ['links',  'Upload links issued',          'API returns two presigned PUT URLs, valid 5 min'],
-  ['idcard', 'ID card front + back uploaded to S3', 'raw/id-card-front/, raw/id-card-back/ · private bucket, SSE-S3'],
-  ['selfie', 'Selfie uploaded → S3 event',   'raw/selfie/ upload is the trigger'],
-  ['start',  'Queued in SQS, pre-check passed', 'starter decodes all three images, joins front + back, starts the workflow'],
-  ['ocr',    'OCR reads the ID card',        'vericloud-ocr (RapidOCR container)'],
-  ['face',   'Face comparison',              'vericloud-face · Rekognition CompareFaces'],
-  ['decide', 'Decision rules',               '5 ordered rules, first match wins'],
-  ['save',   'Saved to DynamoDB',            'one row per application'],
-  ['notify', 'Result email via SNS',         'DynamoDB Stream → notify λ → SNS'],
-];
+const ARCH = [['s3','s3'],['sqs','sqs'],['starter','lambda'],['ocr','lambda'],['face','face'],['sfn','sfn'],['ddb','ddb'],['sns','sns']];
+const GROUPS = [['gUpload',['links','idcard','selfie']], ['gProcess',['start','ocr','face','decide']], ['gResult',['save','notify']]];
+const ORDER = GROUPS.flatMap(g => g[1]);
+let lastArch = {}, lastSt = {};
 function drawArch(state={}) {
-  $('arch').innerHTML = ARCH.map(([k,l], i) => (i ? '<span class="arr">→</span>' : '') + `<span class="svc ${state[k]||''}">${l}</span>`).join('');
+  lastArch = state;
+  $('arch').innerHTML = ARCH.map(([k, ic]) => `<div class="svc ${state[k]||''}"><div class="si">${ICON[ic]}</div><span>${t('sv_' + k)}</span></div>`).join('');
 }
 function drawStages(st={}) {
-  $('stages').innerHTML = STAGES.map(([k,title,desc], i) => {
-    const s = st[k] || {};
+  lastSt = st;
+  $('groups').innerHTML = GROUPS.map(([gk, keys]) => `<div class="grp"><h3>${t(gk)}</h3><ol class="stages">` + keys.map(k => {
+    const s = st[k] || {}, i = ORDER.indexOf(k);
     const icon = s.cls === 'ok' ? '✓' : s.cls === 'bad' ? '✕' : s.cls === 'warn' ? '!' : String(i + 1);
-    return `<li class="${s.cls||''}"><span class="dot">${icon}</span><span class="st"><b>${title}</b><div>${s.note || desc}</div></span><span class="t">${s.t || ''}</span></li>`;
-  }).join('');
+    return `<li class="${s.cls || 'idle'}"><span class="dot">${icon}</span><span class="st"><b>${t('s_' + k)}</b><div>${esc(s.note || t('d_' + k))}</div></span><span class="t">${s.t || ''}</span></li>`;
+  }).join('') + '</ol></div>').join('');
+  const done = ORDER.filter(k => st[k] && (st[k].cls === 'ok' || st[k].cls === 'bad')).length;
+  $('prog').style.width = (done / ORDER.length * 100) + '%';
 }
-drawArch(); drawStages();
 
 const ms = s => s ? new Date(s).getTime() : null;
-const rel = (t, t0) => (t && t0) ? '+' + ((t - t0) / 1000).toFixed(1) + ' s' : '';
+const rel = (x, t0) => (x && t0) ? '+' + ((x - t0) / 1000).toFixed(1) + ' s' : '';
 const kb = n => n < 1024 ? n + ' B' : (n/1024).toFixed(0) + ' KB';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const REASONS = {auto_approved:'Document valid and face matched (≥ 80)', id_expired:'ID card has expired (rule 2)', ocr_failed:'ID card could not be read (rule 1)', face_error:'No usable face found (rule 3)', similarity_below_80:'Face similarity below 80 (rule 4)'};
-const LABEL = {PASS:'PASS · auto-approved', NEEDS_HUMAN_REVIEW:'NEEDS HUMAN REVIEW', FAIL:'FAIL · rejected'};
-
+let lastRender = null, lastResult = null;
 function render(tr, t0, local) {
+  lastRender = [tr, t0, local];
   const st = {}, arch = {};
   const step = n => (tr.steps || []).find(s => s.name === n);
   const any = pre => (tr.steps || []).find(s => s.name && s.name.startsWith(pre));
   st.links = {cls:'ok', t: rel(local.links, t0)};
   const up = tr.uploads || {}, front = up.id_card_front || up.id_card, back = up.id_card_back, sfUp = up.selfie;
-  const idUp = front && back ? {key: 'front + back', size: front.size + back.size} : front;
+  const idUp = front && back ? {key: t('frontBack'), size: front.size + back.size} : front;
   st.idcard = idUp ? {cls:'ok', t: rel(local.idDone, t0), note:`${idUp.key} · ${kb(idUp.size)}`} : {cls: local.idDone ? 'run' : ''};
-  st.selfie = sfUp ? {cls:'ok', t: rel(local.selfieDone, t0), note:`${sfUp.key} · ${kb(sfUp.size)}${local.corrupt ? ' · truncated on purpose' : ''}`} : {cls: local.selfieDone ? 'run' : ''};
+  st.selfie = sfUp ? {cls:'ok', t: rel(local.selfieDone, t0), note:`${sfUp.key} · ${kb(sfUp.size)}${local.corrupt ? t('truncated') : ''}`} : {cls: local.selfieDone ? 'run' : ''};
   if (idUp || sfUp) arch.s3 = 'ok';
   const ex = tr.execution;
   if (ex) {
-    const joined = up.id_card_front && up.id_card ? 'front + back joined into ' + up.id_card.key.split('/').slice(0,2).join('/') + '/ · ' : '';
-    st.start = {cls:'ok', t: rel(ms(ex.started_at), t0), note: joined + (tr.result?.received_at ? `starter received it at ${new Date(tr.result.received_at).toLocaleTimeString()} · execution ${ex.status}` : `execution ${ex.status}`)};
+    const joined = up.id_card_front && up.id_card ? t('joined', {p: up.id_card.key.split('/').slice(0,2).join('/')}) : '';
+    st.start = {cls:'ok', t: rel(ms(ex.started_at), t0), note: joined + (tr.result?.received_at ? t('received', {t: new Date(tr.result.received_at).toLocaleTimeString(), s: ex.status}) : t('execOnly', {s: ex.status}))};
     arch.sqs = arch.starter = 'ok'; arch.sfn = ex.status === 'RUNNING' ? 'run' : ex.status === 'SUCCEEDED' ? 'ok' : 'bad';
   } else if (sfUp) {
     const waited = (Date.now() - (local.selfieDone || Date.now())) / 1000;
-    if (waited > 25) {
-      st.start = {cls:'bad', note:'Rejected at pre-check: no workflow started. SQS will retry the message 3 times, then park it in the dead-letter queue for 14 days. No row, no email.'};
+    if (local.rejected || waited > 25) {
+      local.rejected = true;
+      st.start = {cls:'bad', note: t('rejected')};
       arch.sqs = 'run'; arch.starter = 'bad';
-    } else { st.start = {cls:'run', note:'waiting for SQS → starter …'}; arch.sqs = 'run'; }
+    } else { st.start = {cls:'run', note: t('waitStarter')}; arch.sqs = 'run'; }
   }
   const branch = (inv, err, key, archKey, label) => {
     const s = step(inv), e = step(err);
-    if (e) { st[key] = {cls:'bad', t: rel(ms(e.entered_at), t0), note:`${label} failed — caught, the workflow continues`}; arch[archKey] = 'bad'; }
-    else if (s && s.exited_at) { st[key] = {cls:'ok', t: rel(ms(s.exited_at), t0), note:`${label} finished in ${((ms(s.exited_at) - ms(s.entered_at))/1000).toFixed(1)} s`}; arch[archKey] = 'ok'; }
-    else if (s) { st[key] = {cls:'run', t: rel(ms(s.entered_at), t0), note:`${label} running…`}; arch[archKey] = 'run'; }
+    if (e) { st[key] = {cls:'bad', t: rel(ms(e.entered_at), t0), note: t('bFail', {l: label})}; arch[archKey] = 'bad'; }
+    else if (s && s.exited_at) { st[key] = {cls:'ok', t: rel(ms(s.exited_at), t0), note: t('bDone', {l: label, s: ((ms(s.exited_at) - ms(s.entered_at))/1000).toFixed(1)})}; arch[archKey] = 'ok'; }
+    else if (s) { st[key] = {cls:'run', t: rel(ms(s.entered_at), t0), note: t('bRun', {l: label})}; arch[archKey] = 'run'; }
   };
-  branch('OCR_Invoke', 'OCR_Record_Error', 'ocr', 'ocr', 'OCR');
-  branch('Face_Invoke', 'Face_Record_Error', 'face', 'face', 'Face comparison');
+  branch('OCR_Invoke', 'OCR_Record_Error', 'ocr', 'ocr', t('lOcr'));
+  branch('Face_Invoke', 'Face_Record_Error', 'face', 'face', t('lFace'));
   const d = any('Decision_');
   if (d) st.decide = {cls:'ok', t: rel(ms(d.entered_at), t0), note: d.name.replace('Decision_','').replace(/_/g,' ')};
   const p = any('Persist_');
@@ -262,30 +461,40 @@ function render(tr, t0, local) {
   const r = tr.result;
   if (r) {
     st.save = st.save || {cls:'ok'}; st.save.cls = 'ok'; arch.ddb = 'ok';
-    st.notify = {cls:'ok', note:'Row written → DynamoDB Stream → vericloud-notify → SNS email to the subscribed address'}; arch.sns = 'ok';
+    st.notify = {cls:'ok', note: t('notifyNote')}; arch.sns = 'ok';
   }
   drawArch(arch); drawStages(st);
   if (r) showResult(r);
 }
 
 function showResult(r) {
-  const box = $('result'); box.className = 'result ' + r.review_status; box.style.display = 'block';
+  lastResult = r;
+  const box = $('result'); box.className = 'result ' + r.review_status; box.style.display = 'block'; $('empty').classList.add('hidden');
   const ocr = r.ocr, sim = typeof r.similarity === 'number' ? r.similarity : null;
   const c = ms(r.created_at), rc = ms(r.received_at), pr = ms(r.processed_at);
   const q = rc && c ? (rc - c) / 1000 : null, w = pr && rc ? (pr - rc) / 1000 : null;
-  box.innerHTML = `<div class="verdict">${esc(LABEL[r.review_status] || r.review_status)}</div>
-    <div>${esc(REASONS[r.reason] || r.reason)}</div>
+  const vi = {PASS:'✓', NEEDS_HUMAN_REVIEW:'!', FAIL:'✕'}[r.review_status] || '?';
+  box.innerHTML = `<div class="verdict"><span class="vi">${vi}</span>${esc(I18N[LANG][r.review_status] ? t(r.review_status) : r.review_status)}</div>
+    <div class="why">${esc(I18N.en['r_' + r.reason] ? t('r_' + r.reason) : r.reason)}</div>
     <div class="kv">
-      ${ocr ? `<div><span>Name (masked)</span><strong>${esc(ocr.name)}</strong></div>
-      <div><span>ID number (masked)</span><strong>${esc(ocr.id_number_masked)}</strong></div>
-      <div><span>Expiry</span><strong>${ocr.expiry_date === '9999-12-31' ? 'Long-term' : esc(ocr.expiry_date)} ${ocr.id_valid ? '· valid' : '· expired'}</strong></div>
-      <div><span>Issuing authority</span><strong>${esc(ocr.issuing_authority)}</strong></div>` : `<div><span>OCR</span><strong>No fields extracted</strong></div>`}
-      <div><span>Face similarity (pass ≥ 80)</span><strong>${sim !== null ? sim.toFixed(2) : esc(r.face_error || '—')}</strong>
-        ${sim !== null ? `<div class="simbar"><i style="width:${Math.max(0, Math.min(100, sim))}%;background:${sim >= 80 ? 'var(--ok)' : 'var(--warn)'}"></i><em title="threshold 80"></em></div>` : ''}</div>
+      ${ocr ? `<div><span>${t('kName')}</span><strong>${esc(ocr.name)}</strong></div>
+      <div><span>${t('kId')}</span><strong>${esc(ocr.id_number_masked)}</strong></div>
+      <div><span>${t('kExp')}</span><strong>${ocr.expiry_date === '9999-12-31' ? t('longTerm') : esc(ocr.expiry_date)} · ${ocr.id_valid ? t('valid') : t('expired')}</strong></div>
+      <div><span>${t('kAuth')}</span><strong>${esc(ocr.issuing_authority)}</strong></div>` : `<div><span>${t('kOcr')}</span><strong>${t('noFields')}</strong></div>`}
+      <div style="grid-column:span 2"><span>${t('kSim')}</span><strong>${sim !== null ? sim.toFixed(2) : esc(r.face_error || '—')}</strong>
+        ${sim !== null ? `<div class="simbar"><i style="width:${Math.max(0, Math.min(100, sim))}%;background:${sim >= 80 ? 'var(--ok)' : 'var(--warn)'}"></i><em title="80"></em></div>` : ''}</div>
     </div>
-    ${q !== null && w !== null ? `<div class="kv"><div style="grid-column:1/-1"><span>Latency: upload → queue → starter (${q.toFixed(1)} s) · workflow → saved (${w.toFixed(1)} s)</span>
-      <div class="lat"><div style="flex:${Math.max(q,.3)};background:#7a8aa6">queue + start ${q.toFixed(1)} s</div><div style="flex:${Math.max(w,.3)};background:var(--blue)">OCR ∥ face + decision ${w.toFixed(1)} s</div></div></div></div>` : ''}`;
+    ${q !== null && w !== null ? `<div class="kv"><div style="grid-column:1/-1"><span>${t('latTitle', {q: q.toFixed(1), w: w.toFixed(1)})}</span>
+      <div class="lat"><div style="flex:${Math.max(q,.3)};background:#475569">${t('latQ', {q: q.toFixed(1)})}</div><div style="flex:${Math.max(w,.3)};background:linear-gradient(90deg,#6366f1,#06b6d4)">${t('latW', {w: w.toFixed(1)})}</div></div></div></div>` : ''}`;
 }
+
+// ---------- timer ----------
+let timerId = null;
+function startTimer(t0) {
+  clearInterval(timerId);
+  timerId = setInterval(() => { const s = (Date.now() - t0) / 1000; $('timer').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + (s % 60).toFixed(1).padStart(4, '0'); }, 100);
+}
+const stopTimer = () => clearInterval(timerId);
 
 // ---------- submit ----------
 function uuid() {
@@ -295,22 +504,26 @@ function uuid() {
   return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
 }
 const ext = f => '.' + f.name.split('.').pop().toLowerCase();
+class UiError extends Error { constructor(k, p) { super(k); this.k = k; this.p = p; } }
 async function put(url, body) {
   const r = await fetch(url, {method:'PUT', body, signal: AbortSignal.timeout(60000)});
-  if (!r.ok) throw new Error('Upload failed (' + r.status + '). Check S3 CORS (setup_api.sh step 3).');
+  if (!r.ok) throw new UiError('ePut', {s: r.status});
 }
+let appId = null;
 $('submit').onclick = async () => {
   if (busy) return;
-  busy = true; ready(); $('err').textContent = ''; $('result').style.display = 'none';
+  busy = true; ready(); showErr(null); $('upcard').classList.add('compact');
+  $('result').style.display = 'none'; $('empty').classList.remove('hidden'); lastResult = null; lastRender = null;
   const id = uuid(), corrupt = $('corrupt').checked, local = {corrupt};
-  $('appid').textContent = 'Application ID: ' + id;
-  const t0 = Date.now(); drawArch(); drawStages({links:{cls:'run'}});
+  appId = id; $('appid').textContent = t('appId', {id});
+  const t0 = Date.now(); startTimer(t0); drawArch(); drawStages({links:{cls:'run'}});
   try {
+    if (!API) throw new UiError('eApi');
     const {status, body} = await api('/applications', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({application_id:id, id_card_extension:ext(files.id), id_card_back_extension:ext(files.back), selfie_extension:ext(files.selfie)})});
-    if (status !== 200) throw new Error(body.error || 'Could not create the application (' + status + ')');
-    local.links = Date.now(); drawStages({links:{cls:'ok', t: rel(local.links, t0)}, idcard:{cls:'run'}});
-    if (!body.id_card_back_url) throw new Error('This API does not accept an ID back side yet: rerun infrastructure/setup_api.sh');
+    if (status !== 200) { if (body.error) throw new Error(body.error); throw new UiError('eCreate', {s: status}); }
+    local.links = Date.now(); drawStages({links:{cls:'ok', t: rel(local.links, t0)}, idcard:{cls:'run'}}); drawArch({s3:'run'});
+    if (!body.id_card_back_url) throw new UiError('eBack');
     await put(body.id_card_url, files.id); await put(body.id_card_back_url, files.back); local.idDone = Date.now();
     drawStages({links:{cls:'ok', t: rel(local.links, t0)}, idcard:{cls:'ok', t: rel(local.idDone, t0)}, selfie:{cls:'run'}});
     const selfieBody = corrupt ? files.selfie.slice(0, Math.max(200, Math.floor(files.selfie.size * 0.35)), files.selfie.type) : files.selfie;
@@ -326,34 +539,55 @@ $('submit').onclick = async () => {
       await sleep(1500);
     }
     checkConn();
-  } catch (e) { $('err').textContent = e.message || String(e); }
-  finally { busy = false; ready(); }
+  } catch (e) { if (e instanceof UiError) showErr(e.k, e.p); else { lastErr = null; $('err').textContent = e.message || String(e); } }
+  finally { busy = false; stopTimer(); ready(); }
 };
 
 // ---------- operations ----------
-let opsTimer = null;
+let opsTimer = null, opsData = null, opsAt = null;
+function drawOps() {
+  if (!opsData) return;
+  const body = opsData, c = body.counts, q = body.queues || {}, x = body.executions || {};
+  const stat = (k, v, color) => `<div class="stat" style="border-top-color:${color || 'var(--line2)'}"><span>${t(k)}</span><strong style="color:${color || 'inherit'}">${v ?? '—'}</strong></div>`;
+  $('stats').innerHTML = stat('oPass', c.PASS, 'var(--ok)') + stat('oReview', c.NEEDS_HUMAN_REVIEW, 'var(--warn)') + stat('oFail', c.FAIL, 'var(--bad)')
+    + stat('oRun', x.RUNNING, 'var(--run)') + stat('oQueue', q.ingest ? q.ingest.waiting + ' / ' + q.ingest.in_flight : '—', '#a5b4fc')
+    + stat('oDlq', q.dlq ? q.dlq.waiting + q.dlq.in_flight : '—', 'var(--bad)');
+  $('recent').innerHTML = body.recent.length ? body.recent.map(r => {
+    const c0 = ms(r.created_at), rc = ms(r.received_at), pr = ms(r.processed_at);
+    const label = {PASS: 'oPass', NEEDS_HUMAN_REVIEW: 'oReview', FAIL: 'oFail'}[r.review_status];
+    return `<tr><td class="appid">${esc(r.application_id).slice(0, 8)}…</td><td><span class="tag ${esc(r.review_status)}">${label ? t(label) : esc(r.review_status)}</span></td><td>${esc(I18N.en['r_' + r.reason] ? t('r_' + r.reason) : r.reason)}</td>
+      <td>${typeof r.similarity === 'number' ? r.similarity.toFixed(1) : '—'}</td><td>${rc && c0 ? ((rc - c0)/1000).toFixed(1) + ' s' : '—'}</td>
+      <td>${pr && rc ? ((pr - rc)/1000).toFixed(1) + ' s' : '—'}</td><td>${esc((r.processed_at || '').replace('T',' ').slice(0,19))}</td></tr>`;
+  }).join('') : `<tr><td colspan="7" class="muted">${t('noApps')}</td></tr>`;
+  $('opsTime').textContent = t('refreshed', {t: opsAt});
+}
 async function refreshOps() {
   clearTimeout(opsTimer);
   if ($('tab-ops').classList.contains('hidden')) return;
   try {
     const {status, body} = await api('/dashboard');
-    if (status !== 200) throw new Error('API error ' + status);
-    const c = body.counts, q = body.queues || {}, x = body.executions || {};
-    const stat = (label, v, color) => `<div class="stat"><span>${label}</span><strong style="color:${color||'inherit'}">${v ?? '—'}</strong></div>`;
-    $('stats').innerHTML = stat('Passed', c.PASS, 'var(--ok)') + stat('Needs human review', c.NEEDS_HUMAN_REVIEW, 'var(--warn)') + stat('Failed', c.FAIL, 'var(--bad)')
-      + stat('Running workflows', x.RUNNING) + stat('Queue: waiting / retrying', q.ingest ? q.ingest.waiting + ' / ' + q.ingest.in_flight : '—')
-      + stat('Dead-letter queue', q.dlq ? q.dlq.waiting + q.dlq.in_flight : '—', 'var(--bad)');
-    $('recent').innerHTML = body.recent.length ? body.recent.map(r => {
-      const c0 = ms(r.created_at), rc = ms(r.received_at), pr = ms(r.processed_at);
-      return `<tr><td class="appid">${esc(r.application_id).slice(0, 8)}…</td><td><span class="tag ${esc(r.review_status)}">${esc(r.review_status)}</span></td><td>${esc(r.reason)}</td>
-        <td>${typeof r.similarity === 'number' ? r.similarity.toFixed(1) : '—'}</td><td>${rc && c0 ? ((rc - c0)/1000).toFixed(1) + ' s' : '—'}</td>
-        <td>${pr && rc ? ((pr - rc)/1000).toFixed(1) + ' s' : '—'}</td><td>${esc((r.processed_at || '').replace('T',' ').slice(0,19))}</td></tr>`;
-    }).join('') : '<tr><td colspan="7" class="muted">No applications yet.</td></tr>';
-    $('opsTime').textContent = '· refreshed ' + new Date().toLocaleTimeString();
+    if (status !== 200) throw new Error(t('connErr', {s: status}));
+    opsData = body; opsAt = new Date().toLocaleTimeString(); drawOps();
   } catch (e) { $('opsTime').textContent = '· ' + e.message; }
   opsTimer = setTimeout(refreshOps, 5000);
 }
 
+// ---------- language ----------
+function applyLang() {
+  document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-html]').forEach(el => el.innerHTML = t(el.dataset.i18nHtml));
+  document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+  DROPS.forEach(d => drawDrop(d[0])); ready(); drawConn();
+  if (appId) $('appid').textContent = t('appId', {id: appId});
+  if (lastErr) $('err').textContent = t(lastErr.k, lastErr.p);
+  if (lastRender) render(...lastRender); else { drawArch(lastArch); drawStages(lastSt); }
+  if (lastResult) showResult(lastResult);
+  drawOps();
+}
+document.querySelectorAll('.lang button').forEach(b => b.onclick = () => { LANG = b.dataset.lang; store.set('vericloud_lang', LANG); applyLang(); });
+
+applyLang();
 checkConn();
 if (!API) $('apiDlg').showModal();
 </script>

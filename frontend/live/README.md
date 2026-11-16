@@ -31,3 +31,9 @@ workflows and the latest applications, refreshed every 5 s from `GET /dashboard`
 
 Name and ID number are shown masked; the API never returns them in full.
 No login: keep the API URL inside the team.
+
+## Language / 语言
+
+Top-right **EN | 中文** switches every label, stage note and result text; the choice is remembered in this browser. `?lang=zh` opens it in Chinese directly.
+
+右上角 **EN | 中文** 一键切换全部界面文字、步骤说明和结果；选择会记在本浏览器里。地址后加 `?lang=zh` 直接打开中文版。
