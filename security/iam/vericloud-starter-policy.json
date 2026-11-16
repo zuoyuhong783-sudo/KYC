@@ -4,10 +4,24 @@
     {
       "Sid": "PrecheckUploads",
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:HeadObject"],
+      "Action": [
+        "s3:GetObject"
+      ],
       "Resource": [
         "arn:aws:s3:::vericloud-raw-1009-a/raw/id-card/*",
+        "arn:aws:s3:::vericloud-raw-1009-a/raw/id-card-front/*",
+        "arn:aws:s3:::vericloud-raw-1009-a/raw/id-card-back/*",
         "arn:aws:s3:::vericloud-raw-1009-a/raw/selfie/*"
+      ]
+    },
+    {
+      "Sid": "WriteStitchedIdCard",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::vericloud-raw-1009-a/raw/id-card/*"
       ]
     },
     {
@@ -23,7 +37,9 @@
     {
       "Sid": "StartKycWorkflow",
       "Effect": "Allow",
-      "Action": ["states:StartExecution"],
+      "Action": [
+        "states:StartExecution"
+      ],
       "Resource": "arn:aws:states:us-east-1:153547984638:stateMachine:vericloud-kyc-workflow"
     },
     {

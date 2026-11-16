@@ -11,7 +11,7 @@ API，资源钉到具体桶 / 前缀 / 队列 / 主题 / 函数 ARN**。取值�
 
 | 策略文件 | 角色 | 关键权限 | 资源 |
 |---|---|---|---|
-| `vericloud-starter-policy.json` | starter 函数 | `s3:GetObject/HeadObject`（预检）、`sqs:Receive/Delete/GetAttributes`（消费队列）、`states:StartExecution`（启状态机） | 桶 raw/ 两前缀、ingest-queue、kyc-workflow |
+| `vericloud-starter-policy.json` | starter 函数 | `s3:GetObject`（预检；HEAD 请求也由它授权）、`s3:PutObject`（v1.5 写拼接图）、`sqs:Receive/Delete/GetAttributes`（消费队列）、`states:StartExecution`（启状态机） | 读：桶 raw/ 下四个前缀；写：仅 `raw/id-card/`；ingest-queue、kyc-workflow |
 | `vericloud-ocr-policy.json` | ocr 函数 | `s3:GetObject` | 桶 raw/ 两前缀 |
 | `vericloud-face-policy.json` | face 函数 | `rekognition:CompareFaces`、`s3:GetObject` | 见下「例外 A」、桶 raw/ 两前缀 |
 | `vericloud-notify-policy.json` | notify 函数 | `dynamodb:DescribeStream/GetRecords/GetShardIterator`、`sns:Publish` | 表 stream、kyc-topic |
@@ -19,8 +19,10 @@ API，资源钉到具体桶 / 前缀 / 队列 / 主题 / 函数 ARN**。取值�
 
 设计要点（报告 5.1 素材）：
 
-- **读写分离**：管道前段（starter/ocr/face）对桶只有 GetObject——没有任何
-  角色能写或删用户上传的原图，写入只经预签名 URL 由用户侧发生；
+- **读写分离**：ocr/face 对桶只有 GetObject；starter 唯一的写权限是 v1.5
+  拼接图 `raw/id-card/*`（PutObject，无 Delete）；正反面原图
+  `raw/id-card-front/`、`raw/id-card-back/` 它只能读，不能改也不能删——没有任何角色
+  能删除用户上传的原图，原图写入只经预签名 URL 由用户侧发生；
 - **横向隔离**：face 的策略里没有 SQS/DynamoDB/SNS，notify 的策略里没有
   S3/Rekognition——某个函数凭证泄露，影响面被锁死在它自己的那格；
 - **状态机只能调两个分支函数**，不能调 notify 或 starter（防绕过管道顺序）；
@@ -31,7 +33,7 @@ API，资源钉到具体桶 / 前缀 / 队列 / 主题 / 函数 ARN**。取值�
 | 例外 | 位置 | 理由 |
 |---|---|---|
 | A | Rekognition `Resource: "*"` | 该服务不支持资源级权限（AWS 文档：authorization 不基于资源 ARN）；用 IAM 条件也无法收窄，属服务硬限制。已把 Action 收窄到唯一动作 `CompareFaces` 补偿 |
-| B | S3 `raw/id-card/*`、`raw/selfie/*` | 键名含动态 application_id，无法枚举；通配被钉死在单一桶的两个前缀内，不跨前缀 |
+| B | S3 `raw/id-card/*`、`raw/id-card-front/*`、`raw/id-card-back/*`、`raw/selfie/*` | 键名含动态 application_id，无法枚举；通配被钉死在单一桶的四个前缀内；写权限（starter PutObject）只在 `raw/id-card/` 一个前缀 |
 | C | 日志 `log-group:/aws/lambda/<name>:*` | 日志流名由 Lambda 运行时自动生成；通配被钉死在该函数自己的日志组内 |
 | D | DynamoDB `table/…/stream/*` | 流 token 是开启 Streams 时分配的时间戳，创建前不可知（F 部署后可回填具体 token 收窄为字面量） |
 
