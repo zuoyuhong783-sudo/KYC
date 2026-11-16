@@ -1,0 +1,49 @@
+{
+  "submitted": 3,
+  "valid": 3,
+  "bad": 0,
+  "submit_errors": 0,
+  "valid_with_result": 0,
+  "valid_timeouts": 3,
+  "bad_rejected_no_workflow": 0,
+  "bad_wrongly_processed": 0,
+  "status_counts": {
+    "PASS": 0,
+    "NEEDS_HUMAN_REVIEW": 0,
+    "FAIL": 0
+  },
+  "reason_counts": {},
+  "latency_s": {
+    "queue_start_s": {
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "workflow_s": {
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "end_to_end_s": {
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    }
+  },
+  "mode": "uniform",
+  "duration_s": 3.0,
+  "run_at": "2026-11-15T23:20:15",
+  "queues_after": {
+    "ingest": {
+      "waiting": 3,
+      "in_flight": 0
+    },
+    "dlq": {
+      "waiting": 1,
+      "in_flight": 0
+    }
+  }
+}
